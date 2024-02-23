@@ -22,7 +22,7 @@ export class ProjectService {
     }
 
     ensureDirectoriesExist() {
-        const directories = ['prompts/skills', 'prompts/agents', 'chats'];
+        const directories = ['ai/prompts/tools', 'ai/prompts/agents', 'ai/chats'];
         let displayMessage = false;
 
         for (const dir of directories) {

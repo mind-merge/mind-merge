@@ -11,7 +11,7 @@ export class ChatMonitorService {
     private watcher: chokidar.FSWatcher | undefined;
 
     initialize() {
-        const chatsDir = path.resolve('chats');
+        const chatsDir = path.resolve('ai/chats');
         this.watcher = chokidar.watch(chatsDir, { ignored: '**/resources/**', persistent: true });
 
         this.watcher

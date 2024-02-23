@@ -17,7 +17,7 @@ export class HelpService {
         tree.insert('chats')
         tree.insert('prompts')
         tree.nodes.prompts.insert('agents')
-        tree.nodes.prompts.insert('skills')
+        tree.nodes.prompts.insert('tools')
         tree.display()
 
         console.log(ux.colorize('green', 'You can now start creating your first agent and skill!'));

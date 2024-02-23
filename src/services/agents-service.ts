@@ -20,7 +20,7 @@ export class AgentsService {
 
     initialize() {
         this.loadAgents();
-        const agentsDir = path.resolve('prompts/agents');
+        const agentsDir = path.resolve('ai/prompts/agents');
         this.watcher = chokidar.watch(agentsDir, { persistent: true });
 
         this.watcher
@@ -65,7 +65,7 @@ export class AgentsService {
     }
 
     loadAgents() {
-        const agentsDir = path.resolve('prompts');
+        const agentsDir = path.resolve('ai/prompts');
         const agentNames = fs.readdirSync(agentsDir);
 
         for (const agentName of agentNames) {
