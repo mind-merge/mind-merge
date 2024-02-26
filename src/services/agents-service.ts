@@ -80,7 +80,7 @@ export class AgentsService {
     }
 
     private async handleFileChange(filePath: string) {
-        const agentsDir = path.resolve('prompts/agents');
+        const agentsDir = path.resolve('ai/prompts/agents');
         if (!filePath.startsWith(agentsDir)) {
             return;
         }

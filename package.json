@@ -7,7 +7,7 @@
     "@oclif/core": "^3",
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-plugins": "^4",
-    "chokidar": "^3.5.3",
+    "chokidar": "^3.6.0",
     "gray-matter": "^4.0.3",
     "liquidjs": "^10.10.0",
     "reflect-metadata": "^0.2.1",

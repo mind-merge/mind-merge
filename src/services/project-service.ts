@@ -17,9 +17,7 @@ export class ProjectService {
         private helpService: HelpService,
         private agentsService: AgentsService,
         private chatMonitorService: ChatMonitorService
-    ) {
-
-    }
+    ) {}
 
     ensureDirectoriesExist() {
         const directories = ['ai/prompts/tools', 'ai/prompts/agents', 'ai/chats'];
