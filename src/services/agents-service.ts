@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import {Service} from "typedi";
 import * as chokidar from 'chokidar';
 
-import {Agent} from '../model/agent';
+import {Agent} from '../model';
 
 // eslint-disable-next-line new-cap
 @Service()

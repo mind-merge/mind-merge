@@ -10,6 +10,7 @@
     "chokidar": "^3.6.0",
     "gray-matter": "^4.0.3",
     "liquidjs": "^10.10.0",
+    "lodash": "^4.17.21",
     "reflect-metadata": "^0.2.1",
     "typedi": "^0.10.0"
   },
