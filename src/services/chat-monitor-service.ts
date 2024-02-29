@@ -10,7 +10,7 @@ export class ChatMonitorService {
     private processingFiles: Set<string> = new Set();
     private watcher: chokidar.FSWatcher | undefined;
 
-    initialize() {
+    async initialize() {
         const chatsDir = path.resolve('ai/chats');
         this.watcher = chokidar.watch(chatsDir, { ignored: '**/resources/**', persistent: true });
 
@@ -21,7 +21,7 @@ export class ChatMonitorService {
         ux.log(`Started monitoring chat files in: ${chatsDir}`)
     }
 
-    private async handleFileChange(filePath: string) {
+    async handleFileChange(filePath: string) {
         if (path.extname(filePath) !== '.md' || this.processingFiles.has(filePath)) {
             return;
         }
@@ -35,7 +35,7 @@ export class ChatMonitorService {
         }
     }
 
-    private async processChat(filePath: string, fileContent: string) {
+    async processChat(filePath: string, fileContent: string) {
         ux.log(`Processing chat file: ${filePath}`);
         // append answer to file
         const answer = "This is a test answer\n";

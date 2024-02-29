@@ -11,7 +11,6 @@ import {ChatMonitorService} from "./chat-monitor-service";
 @Service()
 export class ProjectService {
 
-
     // eslint-disable-next-line no-useless-constructor
     constructor(
         private helpService: HelpService,
@@ -19,7 +18,7 @@ export class ProjectService {
         private chatMonitorService: ChatMonitorService
     ) {}
 
-    ensureDirectoriesExist() {
+    async ensureDirectoriesExist() {
         const directories = ['ai/prompts/tools', 'ai/prompts/agents', 'ai/chats'];
         let displayMessage = false;
 
@@ -34,21 +33,17 @@ export class ProjectService {
         }
 
         if (displayMessage) {
-            this.helpService.displayNewProjectHelpMessage();
+            await this.helpService.displayNewProjectHelpMessage();
         }
     }
 
-    initialize() {
-        ux.action.start('Initializing dev-copilot project');
-        this.ensureDirectoriesExist();
+    async initialize() {
+        await ux.action.start('Initializing dev-copilot project');
 
-        this.agentsService.initialize();
+        await this.ensureDirectoriesExist();
+        await this.agentsService.initialize();
+        await this.chatMonitorService.initialize();
 
-        this.chatMonitorService.initialize();
-
-        ux.action.stop();
-
-
+        await ux.action.stop();
     }
-
 }

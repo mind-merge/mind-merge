@@ -18,7 +18,7 @@ export class AgentsService {
         return <Agent>this.agents.get(name);
     }
 
-    initialize() {
+    async initialize() {
         this.loadAgents();
         const agentsDir = path.resolve('ai/prompts/agents');
         this.watcher = chokidar.watch(agentsDir, { persistent: true });
