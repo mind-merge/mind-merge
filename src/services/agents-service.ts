@@ -14,7 +14,7 @@ export class AgentsService {
     private watcher: chokidar.FSWatcher | undefined;
 
 
-    getAgent(name: string): Agent {
+    async getAgent(name: string): Promise<Agent> {
         return <Agent>this.agents.get(name);
     }
 
@@ -30,7 +30,7 @@ export class AgentsService {
         ux.log(`Started monitoring agent files in: ${agentsDir}`)
     }
 
-    loadAgent(agentDir: string, agentName: string) {
+    async loadAgent(agentDir: string, agentName: string) {
         const agentFile = path.join(agentDir, `${agentName}.md`);
         const agentLiquidFile = path.join(agentDir, `${agentName}.md.liquid`);
 
@@ -64,7 +64,7 @@ export class AgentsService {
         ux.log(`Loaded agent: ${agent.name}(${filePath})`)
     }
 
-    loadAgents() {
+    async loadAgents() {
         const agentsDir = path.resolve('ai/prompts');
         const agentNames = fs.readdirSync(agentsDir);
 
@@ -79,7 +79,7 @@ export class AgentsService {
         }
     }
 
-    private async handleFileChange(filePath: string) {
+    async handleFileChange(filePath: string) {
         const agentsDir = path.resolve('ai/prompts/agents');
         if (!filePath.startsWith(agentsDir)) {
             return;

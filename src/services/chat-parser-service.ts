@@ -1,13 +1,16 @@
 import * as fs from 'node:fs';
 import * as matter from 'gray-matter';
-const _ = require('lodash');
 import { Service } from "typedi";
 import { Agent, Chat, Message, Role } from '../model';
+import { AgentsService } from './agents-service';
 
 @Service()
 export class ChatParserService {
+    constructor(
+        private agentsService: AgentsService,
+    ) { }
 
-    parseChatFile(filePath: string): Chat {
+    async parseChatFile(filePath: string) {
         const fileContent = fs.readFileSync(filePath, 'utf-8');
         const { data, content } = matter(fileContent);
 
@@ -36,9 +39,21 @@ export class ChatParserService {
             messages.push(new Message(role, messageText.trim(), new Date(createdAt)));
         });
 
-        const agent = new Agent(agentName, '', '', '', '', '', '', '');
-        const chat = new Chat(agent, messages, '');
+        let agent = await this.agentsService.getAgent(agentName);
 
-        return chat;
+        if (agent) {
+            let agentObj = new Agent(
+                agent.name,
+                agent.baseDir,
+                agent.format,
+                agent.description,
+                agent.prompt,
+                agent.model,
+                agent.inputData,
+                agent.outputData
+            );
+            const chat = new Chat(agentObj, messages);
+            return chat;
+        }
     }
 }
