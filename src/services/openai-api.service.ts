@@ -1,5 +1,6 @@
 import { Service } from "typedi";
 import OpenAI from 'openai';
+const _ = require('lodash');
 import { appConstant } from "../constants";
 
 const openai = new OpenAI({
@@ -9,15 +10,24 @@ const openai = new OpenAI({
 @Service()
 export class OpenAiAPIService {
 
-    async createChat(content: any) {
+    async createChat(content: any, model: string, options: any) {
         if (!content) return false;
         const result = await openai.chat.completions.create({
-            messages: [{ role: "user", content }],
-            model: "gpt-3.5-turbo",
+            messages: content,
+            model,
+            stream: true,
+            max_tokens: options ? options.max_tokens : 256,
+            temperature: options ? options.temperature : 1,
         });
 
-        if (result && result['choices'] && result['choices'].length && result['choices'][0] && result['choices'][0]['message'] && result['choices'][0]['message']['content']) {
-            return result['choices'][0]['message']['content'];
+        let completeResponse: any = '';
+        for await (const chunk of result) {
+            for (const choice of chunk.choices) {
+                if (choice.delta && choice.delta.content) {
+                    completeResponse += choice.delta.content;
+                }
+            }
         }
+        return completeResponse;
     }
 }
