@@ -7,9 +7,11 @@ export class Agent {
     name: string;
     outputData?: string;
     prompt: string;
+    temperature?: number;
+    max_tokens?: number;
 
     // eslint-disable-next-line max-params
-    constructor(name: string, baseDir: string, format:string, description: string, prompt: string, model?: string, inputData?: string, outputData?: string) {
+    constructor(name: string, baseDir: string, format:string, description: string, prompt: string, model?: string, inputData?: string, outputData?: string,  temperature?: number, max_tokens?: number) {
         this.name = name;
         this.baseDir = baseDir;
         this.format = format;
@@ -18,5 +20,7 @@ export class Agent {
         this.model = model;
         this.inputData = inputData;
         this.outputData = outputData;
+        this.temperature = temperature;
+        this.max_tokens = max_tokens;
     }
 }

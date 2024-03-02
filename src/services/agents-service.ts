@@ -57,7 +57,9 @@ export class AgentsService {
             parsedContent.content,
             parsedContent.data.model,
             parsedContent.data.inputData,
-            parsedContent.data.outputData
+            parsedContent.data.outputData,
+            parsedContent.data.temperature,
+            parsedContent.data.max_tokens,
         );
 
         this.agents.set(agent.name, agent);

@@ -1,4 +1,5 @@
 import { OpenAiAPIService } from './openai-api.service';
+import { Service } from "typedi";
 
 interface Message {
     role: string;
@@ -6,9 +7,10 @@ interface Message {
 }
 
 interface Model {
-    completeChatRequest(messages: Message[], options: any): Promise<any>;
+    completeChatRequest(messages: Message[], options?: any): Promise<any>;
 }
 
+@Service()
 export class ModelService {
     private models: any = {};
 
@@ -39,7 +41,7 @@ class OpenAIModel implements Model {
         this.modelName = modelName;
     }
 
-    async completeChatRequest(messages: Message[], options: any) {
+    async completeChatRequest(messages: Message[], options: any = null) {
         return await this.openAiAPIService.createChat(messages, this.modelName, options);
     }
 }

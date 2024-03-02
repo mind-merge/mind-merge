@@ -13,6 +13,9 @@ export class ChatParserService {
     async parseChatFile(filePath: string) {
         const fileContent = fs.readFileSync(filePath, 'utf-8');
         const { data, content } = matter(fileContent);
+        if(!data || !data.agent){
+            data.agent = 'main';
+        }
 
         const agentName = data.agent || null;
         const createdAt = data.createdAt || null;
@@ -50,7 +53,9 @@ export class ChatParserService {
                 agent.prompt,
                 agent.model,
                 agent.inputData,
-                agent.outputData
+                agent.outputData,
+                agent.temperature,
+                agent.max_tokens,
             );
             const chat = new Chat(agentObj, messages);
             return chat;

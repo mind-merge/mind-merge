@@ -1,12 +1,18 @@
-import {ux} from "@oclif/core";
+import { ux } from "@oclif/core";
 import * as chokidar from 'chokidar';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {Service} from "typedi";
+import { Service } from "typedi";
+import { ChatParserService } from "./chat-parser-service";
+import { ModelService } from "./model-service";
 
 // eslint-disable-next-line new-cap
 @Service()
 export class ChatMonitorService {
+    constructor(
+        private chatParserService: ChatParserService,
+        private modelService: ModelService,
+    ) { }
     private processingFiles: Set<string> = new Set();
     private watcher: chokidar.FSWatcher | undefined;
 
@@ -35,7 +41,7 @@ export class ChatMonitorService {
         }
     }
 
-    async processChat(filePath: string, fileContent: string) {
+   /* async processChat(filePath: string, fileContent: string) {
         ux.log(`Processing chat file: ${filePath}`);
         // append answer to file
         const answer = "This is a test answer\n";
@@ -65,5 +71,29 @@ export class ChatMonitorService {
         };
 
         await end();
+    }*/
+
+    async processChat(filePath: string, fileContent: string) {
+        ux.log(`Processing chat file: ${filePath}`);
+
+        if (fileContent) {
+            let chat: any = await this.chatParserService.parseChatFile(filePath);
+            const agent = chat ? chat.agent : null;
+            if (agent) {
+                let data: any = [];
+                let systemData = `name: ${agent.name}, description: ${agent.description}, inputData: ${agent.inputData}, outputData: ${agent.outputData}`;
+                data.push({ role: 'system', content: systemData });
+
+                let optionsData: any = { filePath };
+                if (agent.temperature) optionsData['temperature'] = agent.temperature;
+                if (agent.max_tokens) optionsData['max_tokens'] = agent.max_tokens;
+
+                const content = fileContent.split('# User').slice(-1).join('');
+                data.push({ role: 'user', content });
+
+                const model = await this.modelService.getModel(agent.model);
+                await model?.completeChatRequest(data, optionsData);
+            }
+        }
     }
 }
