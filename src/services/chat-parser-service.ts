@@ -45,20 +45,7 @@ export class ChatParserService {
         let agent = await this.agentsService.getAgent(agentName);
 
         if (agent) {
-            let agentObj = new Agent(
-                agent.name,
-                agent.baseDir,
-                agent.format,
-                agent.description,
-                agent.prompt,
-                agent.model,
-                agent.inputData,
-                agent.outputData,
-                agent.temperature,
-                agent.max_tokens,
-            );
-            const chat = new Chat(agentObj, messages);
-            return chat;
+            return new Chat(agent, messages);
         }
     }
 }

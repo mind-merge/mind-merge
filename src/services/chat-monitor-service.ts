@@ -84,7 +84,7 @@ export class ChatMonitorService {
                 let systemData = `name: ${agent.name}, description: ${agent.description}, inputData: ${agent.inputData}, outputData: ${agent.outputData}`;
                 data.push({ role: 'system', content: systemData });
 
-                let optionsData: any = { filePath };
+                let optionsData: any = {};
                 if (agent.temperature) optionsData['temperature'] = agent.temperature;
                 if (agent.max_tokens) optionsData['max_tokens'] = agent.max_tokens;
 
@@ -92,8 +92,24 @@ export class ChatMonitorService {
                 data.push({ role: 'user', content });
 
                 const model = await this.modelService.getModel(agent.model);
-                await model?.completeChatRequest(data, optionsData);
+                const apiData = await model.completeChatRequest(data, optionsData);
+                await this.appendChunksToChatFile(apiData, filePath);
             }
         }
+    }
+
+    async appendChunksToChatFile(data: any, filePath: string) {
+        fs.appendFileSync(filePath, '# Agent\n\n');
+        for await (const chunk of data) {
+            for (const choice of chunk.choices) {
+                if (choice.delta && choice.delta.content) {
+                    const deltaContent = choice.delta.content;
+                    fs.appendFileSync(filePath, deltaContent);
+                    process.stdout.write(deltaContent.toString());
+                }
+            }
+        }
+        fs.appendFileSync(filePath, '\n\n# User\n\n');
+        console.log(ux.colorize('green', `\nAppended answer to file: ${filePath}`));
     }
 }
