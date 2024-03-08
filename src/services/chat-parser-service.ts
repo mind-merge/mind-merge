@@ -6,13 +6,15 @@ import { AgentsService } from './agents-service';
 
 @Service()
 export class ChatParserService {
+
+    // eslint-disable-next-line no-useless-constructor
     constructor(
         private agentsService: AgentsService,
     ) { }
 
-    async parseChatFile(filePath: string) {
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        const { data, content } = matter(fileContent);
+    async parseChatFile(filePath: string):Promise<Chat | undefined> {
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const { content, data } = matter(fileContent);
         if(!data || !data.agent){
             data.agent = 'main';
         }
@@ -24,8 +26,7 @@ export class ChatParserService {
 
         const messages: Message[] = [];
 
-        chunks.forEach(chunk => {
-
+        for (const chunk of chunks) {
             const lines = chunk.split('\n');
             let role: Role = Role.USER; // Default role is User
             let messageText = '';
@@ -40,9 +41,9 @@ export class ChatParserService {
             }
 
             messages.push(new Message(role, messageText.trim(), new Date(createdAt)));
-        });
+        }
 
-        let agent = await this.agentsService.getAgent(agentName);
+        const agent = await this.agentsService.getAgent(agentName);
 
         if (agent) {
             return new Chat(agent, messages);

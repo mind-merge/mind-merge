@@ -18,6 +18,18 @@ export class AgentsService {
         return <Agent>this.agents.get(name);
     }
 
+    async handleFileChange(filePath: string) {
+        const agentsDir = path.resolve('ai/prompts/agents');
+        if (!filePath.startsWith(agentsDir)) {
+            return;
+        }
+
+        const relativePath = path.relative(agentsDir, filePath);
+        const agentName = relativePath.split(path.sep)[0];
+        const agentDir = path.join(agentsDir, agentName);
+        this.loadAgent(agentDir, agentName);
+    }
+
     async initialize() {
         this.loadAgents();
         const agentsDir = path.resolve('ai/prompts/agents');
@@ -42,6 +54,8 @@ export class AgentsService {
         } else if (fs.existsSync(agentLiquidFile)) {
             filePath = agentLiquidFile;
             format = 'liquid';
+            // TODO: render liquid template if format is liquid
+
         } else {
             return;
         }
@@ -79,18 +93,6 @@ export class AgentsService {
 
             this.loadAgent(agentDir, agentName);
         }
-    }
-
-    async handleFileChange(filePath: string) {
-        const agentsDir = path.resolve('ai/prompts/agents');
-        if (!filePath.startsWith(agentsDir)) {
-            return;
-        }
-
-        const relativePath = path.relative(agentsDir, filePath);
-        const agentName = relativePath.split(path.sep)[0];
-        const agentDir = path.join(agentsDir, agentName);
-        this.loadAgent(agentDir, agentName);
     }
 
 }

@@ -3,28 +3,39 @@ import * as chokidar from 'chokidar';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Service } from "typedi";
+
+import { Chat } from "../model";
 import { ChatParserService } from "./chat-parser-service";
 import { ModelService } from "./model-service";
 
 // eslint-disable-next-line new-cap
 @Service()
 export class ChatMonitorService {
+
+    private processingFiles: Set<string> = new Set();
+    private watcher: chokidar.FSWatcher | undefined;
+
+    // eslint-disable-next-line no-useless-constructor
     constructor(
         private chatParserService: ChatParserService,
         private modelService: ModelService,
     ) { }
-    private processingFiles: Set<string> = new Set();
-    private watcher: chokidar.FSWatcher | undefined;
 
-    async initialize() {
-        const chatsDir = path.resolve('ai/chats');
-        this.watcher = chokidar.watch(chatsDir, { ignored: '**/resources/**', persistent: true });
+    // TODO: use types
+    async appendChunksToChatFile(data: any, filePath: string) {
+        fs.appendFileSync(filePath, '# Agent\n\n');
+        for await (const chunk of data) {
+            for (const choice of chunk.choices) {
+                if (choice.delta && choice.delta.content) {
+                    const deltaContent = choice.delta.content;
+                    fs.appendFileSync(filePath, deltaContent);
+                    process.stdout.write(deltaContent.toString());
+                }
+            }
+        }
 
-        this.watcher
-            .on('add', (filePath) => this.handleFileChange(filePath))
-            .on('change', (filePath) => this.handleFileChange(filePath));
-
-        ux.log(`Started monitoring chat files in: ${chatsDir}`)
+        fs.appendFileSync(filePath, '\n\n# User\n\n');
+        console.log(ux.colorize('green', `\nAppended answer to file: ${filePath}`));
     }
 
     async handleFileChange(filePath: string) {
@@ -41,47 +52,27 @@ export class ChatMonitorService {
         }
     }
 
-   /* async processChat(filePath: string, fileContent: string) {
-        ux.log(`Processing chat file: ${filePath}`);
-        // append answer to file
-        const answer = "This is a test answer\n";
-        // simulate delay
-        const end = async function () {
-            setTimeout(() => {
-                fs.appendFileSync(filePath, '# Agent\n\n');
-                fs.appendFileSync(filePath, answer);
-                console.log(ux.colorize('green', `Appended answer to file: ${filePath}`));
-                setTimeout(() => {
-                    fs.appendFileSync(filePath, answer+" 2 \n");
-                    console.log(ux.colorize('green', `Appended answer to file: ${filePath}`));
-                }, 500)
-                setTimeout(() => {
-                    fs.appendFileSync(filePath, answer+" 3 \n");
-                    console.log(ux.colorize('green', `Appended answer to file: ${filePath}`));
-                }, 1000)
-                setTimeout(() => {
-                    fs.appendFileSync(filePath, answer+" 4 \n");
-                    console.log(ux.colorize('green', `Appended answer to file: ${filePath}`));
-                }, 1500)
-                setTimeout(() => {
-                    fs.appendFileSync(filePath, answer+" 5 \n");
-                    console.log(ux.colorize('green', `Appended answer to file: ${filePath}`));
-                }, 2000)
-            }, 2000)
-        };
+    async initialize() {
+        const chatsDir = path.resolve('ai/chats');
+        this.watcher = chokidar.watch(chatsDir, { ignored: '**/resources/**', persistent: true });
 
-        await end();
-    }*/
+        this.watcher
+            .on('add', (filePath) => this.handleFileChange(filePath))
+            .on('change', (filePath) => this.handleFileChange(filePath));
+
+        ux.log(`Started monitoring chat files in: ${chatsDir}`)
+    }
 
     async processChat(filePath: string, fileContent: string) {
         ux.log(`Processing chat file: ${filePath}`);
 
         if (fileContent) {
-            let chat: any = await this.chatParserService.parseChatFile(filePath);
+            let chat: Chat|undefined = await this.chatParserService.parseChatFile(filePath);
             const agent = chat ? chat.agent : null;
             if (agent) {
                 let data: any = [];
-                let systemData = `name: ${agent.name}, description: ${agent.description}, inputData: ${agent.inputData}, outputData: ${agent.outputData}`;
+                let systemData =
+                    `name: ${agent.name}, description: ${agent.description}, inputData: ${agent.inputData}, outputData: ${agent.outputData}`;
                 data.push({ role: 'system', content: systemData });
 
                 let optionsData: any = {};
@@ -96,20 +87,5 @@ export class ChatMonitorService {
                 await this.appendChunksToChatFile(apiData, filePath);
             }
         }
-    }
-
-    async appendChunksToChatFile(data: any, filePath: string) {
-        fs.appendFileSync(filePath, '# Agent\n\n');
-        for await (const chunk of data) {
-            for (const choice of chunk.choices) {
-                if (choice.delta && choice.delta.content) {
-                    const deltaContent = choice.delta.content;
-                    fs.appendFileSync(filePath, deltaContent);
-                    process.stdout.write(deltaContent.toString());
-                }
-            }
-        }
-        fs.appendFileSync(filePath, '\n\n# User\n\n');
-        console.log(ux.colorize('green', `\nAppended answer to file: ${filePath}`));
     }
 }
