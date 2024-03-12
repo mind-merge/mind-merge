@@ -9,6 +9,16 @@ import { ChatParserService } from "./chat-parser-service";
 import { ModelService } from "./model-service";
 
 // eslint-disable-next-line new-cap
+
+interface Chunk {
+    choices: Choice[];
+}
+interface Choice {
+    delta?: {
+        content?: string;
+    };
+}
+
 @Service()
 export class ChatMonitorService {
 
@@ -21,8 +31,7 @@ export class ChatMonitorService {
         private modelService: ModelService,
     ) { }
 
-    // TODO: use types
-    async appendChunksToChatFile(data: any, filePath: string) {
+    async appendChunksToChatFile(data: Iterable<Chunk>, filePath: string) {
         fs.appendFileSync(filePath, '# Agent\n\n');
         for await (const chunk of data) {
             for (const choice of chunk.choices) {
@@ -70,7 +79,7 @@ export class ChatMonitorService {
             const chat: Chat | undefined = await this.chatParserService.parseChatFile(filePath);
             const agent = chat ? chat.agent : null;
             if (agent) {
-                const data: { content: string, role: Role }[] = [];
+                const data = [];
                 const systemData =
                     `name: ${agent.name}, description: ${agent.description}, inputData: ${agent.inputData}, outputData: ${agent.outputData}, ${agent.prompt}`;
                 data.push({ content: systemData, role: Role.SYSTEM });
@@ -80,7 +89,8 @@ export class ChatMonitorService {
 
                 const model = await this.modelService.getModel(agent.model.modelName);
                 const apiData = await model.completeChatRequest(data);
-                await this.appendChunksToChatFile(apiData, filePath);
+                const iterableApiData = (apiData as unknown as Iterable<Chunk>);
+                await this.appendChunksToChatFile(iterableApiData, filePath);
             }
         }
     }
