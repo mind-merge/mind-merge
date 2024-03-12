@@ -1,5 +1,5 @@
+import {Command} from '@oclif/core'
 import 'reflect-metadata';
-import {Args, Command, Flags} from '@oclif/core'
 import {Container} from "typedi";
 
 import {ProjectService} from "../../services/project-service";

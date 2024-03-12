@@ -1,6 +1,7 @@
-import * as fs from 'node:fs';
 import * as matter from 'gray-matter';
+import * as fs from 'node:fs';
 import { Service } from "typedi";
+
 import { Agent, Chat, Message, Role } from '../model';
 import { AgentsService } from './agents-service';
 
@@ -40,10 +41,10 @@ export class ChatParserService {
                 messageText = lines.join('\n');
             }
 
-            messages.push(new Message(role, messageText.trim(), new Date(createdAt)));
+            messages.push(new Message(role, new Date(createdAt), messageText.trim()));
         }
 
-        const agent = await this.agentsService.getAgent(agentName);
+        const agent: Agent = await this.agentsService.getAgent(agentName);
 
         if (agent) {
             return new Chat(agent, messages);

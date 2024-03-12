@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Service } from "typedi";
 
-import { Chat } from "../model";
+import { Chat, Role } from "../model";
 import { ChatParserService } from "./chat-parser-service";
 import { ModelService } from "./model-service";
 
@@ -34,7 +34,7 @@ export class ChatMonitorService {
             }
         }
 
-        fs.appendFileSync(filePath, '\n\n# User\n\n');
+        fs.appendFileSync(filePath, '\n\n# User\n');
         console.log(ux.colorize('green', `\nAppended answer to file: ${filePath}`));
     }
 
@@ -67,23 +67,19 @@ export class ChatMonitorService {
         ux.log(`Processing chat file: ${filePath}`);
 
         if (fileContent) {
-            let chat: Chat|undefined = await this.chatParserService.parseChatFile(filePath);
+            const chat: Chat | undefined = await this.chatParserService.parseChatFile(filePath);
             const agent = chat ? chat.agent : null;
             if (agent) {
-                let data: any = [];
-                let systemData =
-                    `name: ${agent.name}, description: ${agent.description}, inputData: ${agent.inputData}, outputData: ${agent.outputData}`;
-                data.push({ role: 'system', content: systemData });
-
-                let optionsData: any = {};
-                if (agent.temperature) optionsData['temperature'] = agent.temperature;
-                if (agent.max_tokens) optionsData['max_tokens'] = agent.max_tokens;
+                const data: { content: string, role: Role }[] = [];
+                const systemData =
+                    `name: ${agent.name}, description: ${agent.description}, inputData: ${agent.inputData}, outputData: ${agent.outputData}, ${agent.prompt}`;
+                data.push({ content: systemData, role: Role.SYSTEM });
 
                 const content = fileContent.split('# User').slice(-1).join('');
-                data.push({ role: 'user', content });
+                data.push({ content, role: Role.USER });
 
-                const model = await this.modelService.getModel(agent.model);
-                const apiData = await model.completeChatRequest(data, optionsData);
+                const model = await this.modelService.getModel(agent.model.modelName);
+                const apiData = await model.completeChatRequest(data);
                 await this.appendChunksToChatFile(apiData, filePath);
             }
         }

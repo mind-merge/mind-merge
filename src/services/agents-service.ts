@@ -1,11 +1,13 @@
-import {ux} from "@oclif/core";
+import { ux } from "@oclif/core";
+import * as chokidar from 'chokidar';
 import * as matter from 'gray-matter';
+import { Liquid } from "liquidjs";
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {Service} from "typedi";
-import * as chokidar from 'chokidar';
+import { Service } from "typedi";
 
-import {Agent} from '../model';
+import { Agent } from '../model';
+import { ModelService } from "./model-service";
 
 // eslint-disable-next-line new-cap
 @Service()
@@ -13,6 +15,9 @@ export class AgentsService {
     agents: Map<string, Agent> = new Map();
     private watcher: chokidar.FSWatcher | undefined;
 
+    constructor(
+        private modelService: ModelService,
+    ) { }
 
     async getAgent(name: string): Promise<Agent> {
         return <Agent>this.agents.get(name);
@@ -46,22 +51,28 @@ export class AgentsService {
         const agentFile = path.join(agentDir, `${agentName}.md`);
         const agentLiquidFile = path.join(agentDir, `${agentName}.md.liquid`);
 
-        let filePath;
-        let format;
+        let filePath, format, fileContent, parsedContent;
         if (fs.existsSync(agentFile)) {
             filePath = agentFile;
             format = 'md';
-        } else if (fs.existsSync(agentLiquidFile)) {
+            fileContent = fs.readFileSync(filePath, 'utf8');
+            parsedContent = matter(fileContent);
+        }
+        else if (fs.existsSync(agentLiquidFile)) {
             filePath = agentLiquidFile;
             format = 'liquid';
-            // TODO: render liquid template if format is liquid
-
-        } else {
+            fileContent = fs.readFileSync(filePath, 'utf8');
+            parsedContent = matter(fileContent);
+            const engine = new Liquid();
+            parsedContent.content = await engine.parseAndRender(parsedContent.content, parsedContent.data)
+                .then((renderedContent) => renderedContent)
+                .catch((error) => { console.error(error); });
+        }
+        else {
             return;
         }
 
-        const fileContent = fs.readFileSync(filePath, 'utf8');
-        const parsedContent = matter(fileContent);
+        const Model = await this.modelService.getModel(parsedContent.data.model);
 
         const agent = new Agent(
             parsedContent.data.name,
@@ -69,11 +80,9 @@ export class AgentsService {
             format,
             parsedContent.data.description,
             parsedContent.content,
-            parsedContent.data.model,
+            Model,
             parsedContent.data.inputData,
             parsedContent.data.outputData,
-            parsedContent.data.temperature,
-            parsedContent.data.max_tokens,
         );
 
         this.agents.set(agent.name, agent);

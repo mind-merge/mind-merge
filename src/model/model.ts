@@ -1,7 +1,8 @@
-import {Message} from "./message";
+import { ChatCompletionMessageParam } from "openai/resources";
 
 export interface IModel {
-    // TODO: Return typed response
-    // TODO: Add options type
-    completeChatRequest(messages: Message[], options?: any): Promise<any>;
+    modelName: string;
+    maxInputTokens: number;
+    maxOutputTokens: number;
+    completeChatRequest(messages: ChatCompletionMessageParam[], options?:unknown): Promise<unknown>;
 }

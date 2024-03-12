@@ -1,17 +1,16 @@
+import { IModel } from "./model";
 export class Agent {
     baseDir: string;
     description: string;
     format: string;
     inputData?: string;
-    model?: string; // TODO: change to Model instance
+    model: IModel;
     name: string;
     outputData?: string;
     prompt: string;
-    temperature?: number;
-    max_tokens?: number; // TODO: move to Model
 
     // eslint-disable-next-line max-params
-    constructor(name: string, baseDir: string, format:string, description: string, prompt: string, model?: string, inputData?: string, outputData?: string,  temperature?: number, max_tokens?: number) {
+    constructor(name: string, baseDir: string, format: string, description: string, prompt: string, model: IModel, inputData?: string, outputData?: string) {
         this.name = name;
         this.baseDir = baseDir;
         this.format = format;
@@ -20,7 +19,5 @@ export class Agent {
         this.model = model;
         this.inputData = inputData;
         this.outputData = outputData;
-        this.temperature = temperature;
-        this.max_tokens = max_tokens;
     }
 }
