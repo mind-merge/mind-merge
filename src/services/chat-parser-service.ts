@@ -15,7 +15,7 @@ export class ChatParserService {
 
     async parseChatFile(filePath: string):Promise<Chat | undefined> {
         const fileContent = fs.readFileSync(filePath, 'utf8');
-        const { content, data } = matter(fileContent);
+        let { content, data } = matter(fileContent);
         if(!data || !data.agent){
             data.agent = 'main';
         }
@@ -23,27 +23,16 @@ export class ChatParserService {
         const agentName = data.agent || null;
         const createdAt = data.createdAt || null;
 
-        const chunks = content.split('\n---\n').map(chunk => chunk.trim());
-
+        content = content.replace(/\n---\n/g, '\n');
+        let pattern = /# (User|Agent)\n([\s\S]*?)(?=# (User|Agent)|$)/g;
+        let matches = [...content.matchAll(pattern)];
         const messages: Message[] = [];
 
-        for (const chunk of chunks) {
-            const lines = chunk.split('\n');
-            let role: Role = Role.USER; // Default role is User
-            let messageText = '';
-
-            if (lines[0].startsWith('# Agent')) {
-                role = Role.ASSISTANT;
-                messageText = lines.slice(1).join('\n');
-            } else if (lines[0].startsWith('# User')) {
-                messageText = lines.slice(1).join('\n');
-            } else {
-                messageText = lines.join('\n');
-            }
-
-            messages.push(new Message(role, new Date(createdAt), messageText.trim()));
+        for(const match of matches){
+            let role: Role = match[1] == 'User' ? Role.USER : Role.ASSISTANT; // Default role is User
+            let messageText = match[2].trim();
+            messages.push(new Message(role, new Date(createdAt), messageText));
         }
-
         const agent: Agent = await this.agentsService.getAgent(agentName);
 
         if (agent) {
