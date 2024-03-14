@@ -1,12 +1,12 @@
 export class Message {
-    date?: Date;
-    message?: string;
+    // date?: Date;
+    content?: string;
     role: Role;
 
-    constructor(role: Role, date?: Date, message?: string) {
+    constructor(role: Role, content?: string) {
         this.role = role;
-        this.date = date;
-        this.message = message;
+        // this.date = date;
+        this.content = content;
     }
 }
 

@@ -13,30 +13,27 @@ export class ChatParserService {
         private agentsService: AgentsService,
     ) { }
 
-    async parseChatFile(filePath: string):Promise<Chat | undefined> {
+    async parseChatFile(filePath: string): Promise<Chat> {
         const fileContent = fs.readFileSync(filePath, 'utf8');
         let { content, data } = matter(fileContent);
-        if(!data || !data.agent){
+        if (!data || !data.agent) {
             data.agent = 'main';
         }
 
         const agentName = data.agent || null;
-        const createdAt = data.createdAt || null;
 
         content = content.replace(/\n---\n/g, '\n');
         let pattern = /# (User|Agent)\n([\s\S]*?)(?=# (User|Agent)|$)/g;
         let matches = [...content.matchAll(pattern)];
-        const messages: Message[] = [];
 
-        for(const match of matches){
-            let role: Role = match[1] == 'User' ? Role.USER : Role.ASSISTANT; // Default role is User
-            let messageText = match[2].trim();
-            messages.push(new Message(role, new Date(createdAt), messageText));
-        }
         const agent: Agent = await this.agentsService.getAgent(agentName);
+        let messages: Message[] = agent.prepareChatForModel();
 
-        if (agent) {
-            return new Chat(agent, messages);
+        for (const match of matches) {
+            let role: Role = match[1] == 'Agent' ? Role.ASSISTANT : Role.USER; // Default role is User
+            let messageText: string = match[2].trim();
+            messages.push({ role, content: messageText });
         }
+        return new Chat(agent, messages);
     }
 }

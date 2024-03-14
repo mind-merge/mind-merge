@@ -19,6 +19,11 @@ interface Choice {
     };
 }
 
+type ChatCompletionRequest = {
+    content?: string;
+    role: Role;
+}[];
+
 @Service()
 export class ChatMonitorService {
 
@@ -76,17 +81,10 @@ export class ChatMonitorService {
         ux.log(`Processing chat file: ${filePath}`);
 
         if (fileContent) {
-            const chat: Chat | undefined = await this.chatParserService.parseChatFile(filePath);
+            const chat: Chat = await this.chatParserService.parseChatFile(filePath);
             const agent = chat ? chat.agent : null;
             if (agent) {
-                const data = [];
-                const systemData =
-                    `name: ${agent.name}, description: ${agent.description}, inputData: ${agent.inputData}, outputData: ${agent.outputData}, ${agent.prompt}`;
-                data.push({ content: systemData, role: Role.SYSTEM });
-
-                const content = fileContent.split('# User').slice(-1).join('');
-                data.push({ content, role: Role.USER });
-
+                const data: ChatCompletionRequest  = chat.messages;
                 const model = await this.modelService.getModel(agent.model.modelName);
                 const apiData = await model.completeChatRequest(data);
                 const iterableApiData = (apiData as unknown as Iterable<Chunk>);

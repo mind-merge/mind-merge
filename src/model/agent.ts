@@ -1,4 +1,4 @@
-import { IModel } from "./model";
+import { IModel, Message, Role } from "./index";
 export class Agent {
     baseDir: string;
     description: string;
@@ -19,5 +19,12 @@ export class Agent {
         this.model = model;
         this.inputData = inputData;
         this.outputData = outputData;
+    }
+
+    prepareChatForModel(): Message[] {
+        const messages: Message[] = [];
+        const systemPrompt = `name: ${this.name}, description: ${this.description}, inputData: ${this.inputData}, outputData: ${this.outputData}, ${this.prompt}`;
+        messages.push({ content: systemPrompt, role: Role.SYSTEM });
+        return messages as Message[];
     }
 }

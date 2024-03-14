@@ -62,17 +62,20 @@ export class AgentsService {
             filePath = agentLiquidFile;
             format = 'liquid';
             fileContent = fs.readFileSync(filePath, 'utf8');
-            parsedContent = matter(fileContent);
             const engine = new Liquid();
-            parsedContent.content = await engine.parseAndRender(parsedContent.content, parsedContent.data)
-                .then((renderedContent) => renderedContent)
-                .catch((error) => { console.error(error); });
+            parsedContent = await engine.parseAndRender(fileContent)
+            .then((renderedContent) => matter(renderedContent))
+            .catch((error) => {
+                console.error(error);
+            });
         }
         else {
             return;
         }
 
-        const Model = await this.modelService.getModel(parsedContent.data.model);
+        if (!parsedContent) return;
+
+        const model = await this.modelService.getModel(parsedContent.data.model);
 
         const agent = new Agent(
             parsedContent.data.name,
@@ -80,7 +83,7 @@ export class AgentsService {
             format,
             parsedContent.data.description,
             parsedContent.content,
-            Model,
+            model,
             parsedContent.data.inputData,
             parsedContent.data.outputData,
         );

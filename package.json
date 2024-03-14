@@ -9,6 +9,7 @@
     "@oclif/plugin-plugins": "^4",
     "chokidar": "^3.6.0",
     "dotenv": "^16.4.5",
+    "gpt-tokenizer": "^2.1.2",
     "gray-matter": "^4.0.3",
     "liquidjs": "^10.10.1",
     "lodash": "^4.17.21",

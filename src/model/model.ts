@@ -1,8 +1,9 @@
-import { ChatCompletionMessageParam } from "openai/resources";
+import { Message } from "./index";
 
 export interface IModel {
     modelName: string;
     maxInputTokens: number;
     maxOutputTokens: number;
-    completeChatRequest(messages: ChatCompletionMessageParam[], options?:unknown): Promise<unknown>;
+    completeChatRequest(messages: Message[], options?:unknown): Promise<unknown>;
+    calculateToken(messages: Message[]):Promise<number>;
 }
