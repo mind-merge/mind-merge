@@ -1,5 +1,4 @@
 import OpenAI from 'openai';
-import { ChatCompletionMessageParam } from "openai/resources";
 import { encodeChat, } from 'gpt-tokenizer';
 
 import { appConstant } from "../constants";
@@ -8,6 +7,10 @@ import { IModel, Message, Role } from "./index";
 const openAI = new OpenAI({
     apiKey: appConstant.OPENAI_API_KEY
 });
+interface ChatMessage {
+    role: Role;
+    content: string;
+}
 
 export class OpenAIModel implements IModel {
 
@@ -33,7 +36,7 @@ export class OpenAIModel implements IModel {
             return {
                 role: message.role as Role,
                 content: message.content,
-            } as ChatCompletionMessageParam;
+            } as ChatMessage;
         });
         return openAI.chat.completions.create({
             max_tokens: this.maxOutputTokens,
