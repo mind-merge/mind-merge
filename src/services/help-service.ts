@@ -5,7 +5,7 @@ import {Service} from "typedi";
 @Service()
 export class HelpService {
 
-    displayNewProjectHelpMessage() {
+    async displayNewProjectHelpMessage() {
         if (ux.action.running) {
             ux.action.stop();
         }
