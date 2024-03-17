@@ -1,0 +1,4 @@
+command: cat
+description: Read the file
+args:
+  - the file to read

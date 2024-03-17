@@ -1,0 +1,2 @@
+command: find src -type f
+description: Get list of project source files

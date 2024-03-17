@@ -1,18 +1,20 @@
 export class Agent {
     baseDir: string;
     description: string;
+    fileName: string;
     format: string;
     inputData?: string;
-    model?: string; // TODO: change to Model instance
+    model?: string;
     name: string;
     outputData?: string;
     prompt: string;
-    temperature?: number;
-    max_tokens?: number; // TODO: move to Model
+
 
     // eslint-disable-next-line max-params
-    constructor(name: string, baseDir: string, format:string, description: string, prompt: string, model?: string, inputData?: string, outputData?: string,  temperature?: number, max_tokens?: number) {
+    constructor(name: string, fileName: string, baseDir: string, format:string, description: string, prompt: string,
+                model?: string, inputData?: string, outputData?: string) {
         this.name = name;
+        this.fileName = fileName;
         this.baseDir = baseDir;
         this.format = format;
         this.description = description;
@@ -20,7 +22,5 @@ export class Agent {
         this.model = model;
         this.inputData = inputData;
         this.outputData = outputData;
-        this.temperature = temperature;
-        this.max_tokens = max_tokens;
     }
 }

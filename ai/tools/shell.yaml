@@ -1,0 +1,3 @@
+command: bash
+description: You can use this tool to run any shell command, read files, find files, filter anything with sed, etc. Any bash compatible script can be run.
+stdin: the script to run, it should start with #!/bin/bash

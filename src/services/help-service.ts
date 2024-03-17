@@ -10,7 +10,7 @@ export class HelpService {
             ux.action.stop();
         }
 
-        console.log(ux.colorize('green', 'New dev-copilot project structure created!'));
+        console.log(ux.colorize('green', 'New mind-merge project structure created!'));
         console.log('Here are the new dirs that were created:');
 
         const tree = ux.tree()

@@ -1,5 +1,5 @@
+import {Command} from '@oclif/core'
 import 'reflect-metadata';
-import {Args, Command, Flags} from '@oclif/core'
 import {Container} from "typedi";
 
 import {ProjectService} from "../../services/project-service";
@@ -7,10 +7,10 @@ import {ProjectService} from "../../services/project-service";
 export default class Start extends Command {
   static args = {}
 
-  static description = 'Start dev-copilot start in the current directory'
+  static description = 'Start mind-merge start in the current directory'
 
   static examples = [
-    `$ dev-copilot start`,
+    `$ mm start`,
   ]
 
   static flags = {

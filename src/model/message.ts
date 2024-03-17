@@ -1,17 +1,19 @@
 export enum Role {
-    SYSTEM = "system",
-    USER = "user",
     ASSISTANT = "assistant",
+    FUNCTION = "function",
+    SYSTEM = "system",
+    TOOL = "tool",
+    USER = "user",
 }
 
 export class Message {
-    role: Role;
-    message: string;
+    content: string;
     date: Date;
+    role: Role;
 
     constructor(role: Role, message: string, date: Date) {
         this.role = role;
-        this.message = message;
+        this.content = message;
         this.date = date;
     }
 }

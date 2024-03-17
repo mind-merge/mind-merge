@@ -1,22 +1,27 @@
 {
   "author": "Alex Mincu @mincua",
   "bin": {
-    "dev-copilot": "./bin/run.js"
+    "mm": "./bin/run.js"
   },
   "dependencies": {
     "@oclif/core": "^3",
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-plugins": "^4",
+    "@types/js-yaml": "^4.0.9",
+    "@types/mime": "^3.0.4",
     "chokidar": "^3.6.0",
     "dotenv": "^16.4.5",
+    "gpt-tokenizer": "^2.1.2",
     "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
     "liquidjs": "^10.10.0",
     "lodash": "^4.17.21",
+    "mime": "^4.0.1",
     "openai": "^4.28.0",
     "reflect-metadata": "^0.2.1",
     "typedi": "^0.10.0"
   },
-  "description": "Dev Copilot that will let you build an army of agents designed for your project and code then work with them",
+  "description": "Mind-Merge is a copilot that will let you build an army of agents designed for your project and code then work with them",
   "devDependencies": {
     "@oclif/prettier-config": "^0.2.1",
     "@oclif/test": "^3",
@@ -45,10 +50,10 @@
   "homepage": "https://github.com/mincua/dev-copilot",
   "license": "MIT",
   "main": "dist/index.js",
-  "name": "dev-copilot",
+  "name": "mind-merge",
   "oclif": {
-    "bin": "dev-copilot",
-    "dirname": "dev-copilot",
+    "bin": "mm",
+    "dirname": "mind-merge",
     "commands": "./dist/commands",
     "plugins": [
       "@oclif/plugin-help",
@@ -61,7 +66,7 @@
       }
     }
   },
-  "repository": "mincua/dev-copilot",
+  "repository": "mincua/mind-merge",
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
     "lint": "eslint . --ext .ts",
@@ -72,8 +77,8 @@
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif readme && git add README.md"
   },
-  "version": "0.0.0",
-  "bugs": "https://github.com/mincua/dev-copilot/issues",
+  "version": "0.0.1",
+  "bugs": "https://github.com/mincua/mind-merge/issues",
   "keywords": [
     "oclif"
   ],

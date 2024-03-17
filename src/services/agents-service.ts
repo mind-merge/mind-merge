@@ -1,24 +1,30 @@
 import {ux} from "@oclif/core";
-import * as matter from 'gray-matter';
+import * as chokidar from 'chokidar';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Service} from "typedi";
-import * as chokidar from 'chokidar';
 
 import {Agent} from '../model';
+
+import matter = require("gray-matter");
+import {ToolsService} from "./tools-service";
 
 // eslint-disable-next-line new-cap
 @Service()
 export class AgentsService {
-    agents: Map<string, Agent> = new Map();
+    agents: Map<string, Agent> = new Map<string, Agent>();
     private watcher: chokidar.FSWatcher | undefined;
 
+    // eslint-disable-next-line no-useless-constructor
+    constructor(
+        private toolsService: ToolsService
+    ) {}
 
     async getAgent(name: string): Promise<Agent> {
         return <Agent>this.agents.get(name);
     }
 
-    async handleFileChange(filePath: string) {
+    async handleFileChange(filePath: string): Promise<void> {
         const agentsDir = path.resolve('ai/prompts/agents');
         if (!filePath.startsWith(agentsDir)) {
             return;
@@ -27,7 +33,7 @@ export class AgentsService {
         const relativePath = path.relative(agentsDir, filePath);
         const agentName = relativePath.split(path.sep)[0];
         const agentDir = path.join(agentsDir, agentName);
-        this.loadAgent(agentDir, agentName);
+        await this.loadAgent(agentDir, agentName);
     }
 
     async initialize() {
@@ -43,19 +49,13 @@ export class AgentsService {
     }
 
     async loadAgent(agentDir: string, agentName: string) {
-        const agentFile = path.join(agentDir, `${agentName}.md`);
         const agentLiquidFile = path.join(agentDir, `${agentName}.md.liquid`);
 
         let filePath;
         let format;
-        if (fs.existsSync(agentFile)) {
-            filePath = agentFile;
-            format = 'md';
-        } else if (fs.existsSync(agentLiquidFile)) {
+        if (fs.existsSync(agentLiquidFile)) {
             filePath = agentLiquidFile;
             format = 'liquid';
-            // TODO: render liquid template if format is liquid
-
         } else {
             return;
         }
@@ -65,22 +65,22 @@ export class AgentsService {
 
         const agent = new Agent(
             parsedContent.data.name,
+            filePath,
             agentDir,
             format,
             parsedContent.data.description,
             parsedContent.content,
             parsedContent.data.model,
             parsedContent.data.inputData,
-            parsedContent.data.outputData,
-            parsedContent.data.temperature,
-            parsedContent.data.max_tokens,
+            parsedContent.data.outputData
         );
 
         this.agents.set(agent.name, agent);
+        this.toolsService.parseAgentTools(agent.name, agentDir);
         ux.log(`Loaded agent: ${agent.name}(${filePath})`)
     }
 
-    async loadAgents() {
+    async loadAgents():Promise<void> {
         const agentsDir = path.resolve('ai/prompts');
         const agentNames = fs.readdirSync(agentsDir);
 

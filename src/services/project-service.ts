@@ -4,8 +4,9 @@ import * as path from 'node:path';
 import {Service} from "typedi";
 
 import {AgentsService} from "./agents-service";
-import {HelpService} from "./help-service";
 import {ChatMonitorService} from "./chat-monitor-service";
+import {HelpService} from "./help-service";
+import {ToolsService} from "./tools-service";
 
 // eslint-disable-next-line new-cap
 @Service()
@@ -15,11 +16,12 @@ export class ProjectService {
     constructor(
         private helpService: HelpService,
         private agentsService: AgentsService,
-        private chatMonitorService: ChatMonitorService
+        private chatMonitorService: ChatMonitorService,
+        private toolsService: ToolsService
     ) {}
 
     async ensureDirectoriesExist() {
-        const directories = ['ai/prompts/tools', 'ai/prompts/agents', 'ai/chats'];
+        const directories = ['ai/tools', 'ai/prompts/agents', 'ai/chats'];
         let displayMessage = false;
 
         for (const dir of directories) {
@@ -38,11 +40,12 @@ export class ProjectService {
     }
 
     async initialize() {
-        await ux.action.start('Initializing dev-copilot project');
+        await ux.action.start('Initializing mind-merge project');
 
         await this.ensureDirectoriesExist();
         await this.agentsService.initialize();
         await this.chatMonitorService.initialize();
+        this.toolsService.initialize();
 
         await ux.action.stop();
     }

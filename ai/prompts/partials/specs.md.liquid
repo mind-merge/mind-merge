@@ -1,0 +1,222 @@
+#### Features and Functionalities
+- **AI Agents Structure**: Automates the generation of a directory structure within git projects for hosting AI agents, their prompts, skills, chats, and associated tools.
+- **Agent and Tool Definition**: Supports defining AI agents and tools through markdown and YAML files, respectively, enabling easy sharing and versioning.
+- **Multi-Agent Execution**: Allows running up to three background agents concurrently per project to optimize resource utilization and response times.
+- **AI Model Integration**: Initially integrates with OpenAI models, with plans to support additional models in future phases.
+- **CLI Interaction**: Provides a command-line interface (CLI) for interacting with AI agents, initiating chats, and managing tool executions.
+- **Agent Collaboration**: Facilitates communication between different AI agents and tools, allowing for complex workflows and tasks to be automated within the development environment.
+- **Resource Management**: Manages generated files and diffs efficiently, ensuring that outputs from AI interactions are stored and versioned appropriately.
+
+#### Non-functional Requirements
+- **Scalability**: Designed to scale with the developer's workflow, allowing for multiple instances to run simultaneously on different projects.
+- **Maintainability**: Adheres to best practices in code quality, documentation, and architecture to ensure easy maintenance and future enhancements.
+- **Security**: Although not implementing authentication in the initial phase, ensures secure handling of API tokens and sensitive data through environment variables.
+
+#### Assumptions and Dependencies
+- Developers have valid OpenAI API tokens set as environment variables.
+
+# Here's how it works
+
+The mind-merge tool at init time will automatically generate a structure for holding agents with prompts, skills and chats in git, here's how that structure looks like:
+```
+ai
+	agents
+		{agent-name}
+			{agent-name}{.md|.md.liquid}
+			tools
+				private-tool-name.sh.yaml
+				private-tool-name.sh
+	tools
+		get-git-branch.sh
+		get-git-branch.sh.yaml
+		commit-files.sh
+		commit-files.sh.yaml
+		get-diff.sh
+		get-diff.sh.yaml
+		annotate-file.sh
+		annotate-file.sh.yaml
+		annotate-part-of-file.sh
+		annotate-part-of-file.sh.yaml
+	chats
+		{user-name}
+			{chat-name}
+				any-chat.md
+				resources
+	memories
+		project-structure.md
+		services-description.md
+```
+
+Now let's explain what each of those folders dose
+
+## ai/agents
+
+Each folder in this folder will contain specifications for a specific AI agent.
+A definition file for the agent is required, this can take 2 formats:
+- a simple md file named agent-name.md
+- a markdown that uses the liquid templating agent - named agent-name.md.liquid
+
+Each agent can also have multiple tools defined, these will be stored in the folder `tools` inside the agent folder, these are private tools that only this agent can use.
+The tools will be defined like all other tools, see the `ai/tools` chapter below for details.
+
+Agent file format example:
+```markdown
+---
+name: coding-agent
+description: Agent that helps with coding tasks
+model: gpt-4-turbo-preview
+userInput: true
+inputData: This agent takes a description of a coding task as input, in plain text, as descriptive as possible
+outputData: The agent will output a code snippet that solves the task in a codeblock.
+---
+You are an experienced coding agent, you take a coding task and return code that solves it.
+Return only the code in a codeblock, no other text.
+```
+
+If the file is in liquid format it will be transformed using the liquid templating engine into an md file then the result will be loaded just like a plain md file.
+## ai/tools
+
+Here we can define multiple tools that all agents can use.
+Each tool is defined in a yaml file inside this folder, it optionally can have a script too.
+The script file can have any extension but should be executable and the name will be defined in the yaml description file.
+The `.yaml` file will be used to define the tool description, parameters and output in a format that LLMs understand.
+
+Tool yaml file example:
+```yaml
+name: commit-files
+command: commit-files.sh
+description: Will commit files to git
+input:
+  params:
+    - name: '--file'
+      multiple: true
+      required: true
+      description: provide the path to a file you want to commit
+    - name: '--message'
+      multiple: false
+      required: false
+      description: the commit message
+  stdin: >-
+    If you don't provide a commit message using --message you can provide on at
+    stdin use this for longer messages
+output: The commit hash
+tips:
+  - name: handle message too long error
+    info: >-
+      If you get an error message that the message is too long you should
+      rewrite the commit message and summarize it then retry the command
+```
+
+
+## ai/chats/{user-name}/{chat-name}
+
+Users can chat with the agents by creating folders for each chat in their specific folder.
+Each chat will be represented by a `.md` file.
+The MindMerge tool will have an CLI command that can be used to generate a new chat file in the right structure, ex: `mm new --user="alex" --name="issue-33"`.
+
+The MindMerge listener will monitor all folders and `.md` files in each folder.
+When the user saves a file the MindMerge tools will read the file and see if it ends in "\n---\n":
+- if it dose then the tool will start executing the chat, we'll define how that works in a specific folder
+- if it doesn't  then it will just ignore the change and listen until it dose
+
+The answer from the agent/agents will be appended to the same file.
+If possible we'll have support to automatically tell the user's IDE to reload the file from disk after each write.
+The output from the agents will also be shown in the user's console where MindMerge tool is running.
+
+If the output is coming from different agents that will be shown in the chat md file by adding yaml tags before each section of the answer.
+
+Example chat `md` file format:
+
+```markdown
+# User
+Let's make the AgentsService class store a list of agents,
+each agent will be represented by a class Agent that will store the:
+- name
+- description
+- prompt
+- the model used(optional)
+- input data structure & description - string, also optional
+- and output data description.
+
+---
+
+# Agent
+---
+agent: main
+---
+
+Ok, let's start planning how the code should look like for the AgentsService class.
+I will now call the Code Planning agent to help with this task
+
+---
+agent: code-planning
+---
+
+Here is the proposed code stucture for the AgentsService class:
+<snip>
+
+---
+
+# User
+
+```
+
+
+## ai/chats/{user-name}/{chat-name}/resources
+
+Some agents can generate code or diffs to existing files.
+If an agent generates new files, each new file is written to the `ai/chats/{user-name}/{chat-name}/resources`
+If an agent generates a diff to an existing file this diff will also be written in the same folder.
+To avoid file naming conflicts each resource generation will create a new index folder inside the resources folder and all files generated in that run will be stored there.
+So for example if a user is working with the agent on a specific file and the agent generates multiple versions of that file, it will store each version in the `resources` folder in a specific index folder.
+Ex: for the file AgentsService.ts the first version generated will be stored as `1/AgentsService.ts`, the second in `2/AgentsService.ts`
+
+# MindMerge listener
+
+The MindMerge listener tool will handle the user interaction with the agents & chats, it will monitor any changes to the ai folder & reload things appropriately, it will monitor chat files and start agent interactions when necessary then output the agent answers to both stdout & append them to the chat file.
+
+The listener will be started in the root of the project by running `mm start`
+
+# Running an agent
+
+Once a chat file is created and the user writes the initial prompt, ending the file in "\n--\n" the `main` agent will get started and the initial prompt will be provided to the agent.
+
+The agent's system message will be generated from the agent description files and the inputs will be generated from the chat file.
+Each agent will use the model specified in the agent description file.
+
+The agent can do multiple things:
+- Write output for the user
+- Call one or more agents
+- Use one or more tools
+- Generate a file
+- Generate a diff for an existing file
+
+Except for the user output each other action will be preceded by a special string so the MindMerge listener can detect that and start parsing commands, ex:
+
+```
+We will now call the agent CodingAgent to generate the AgentService.ts file
+
+<mm-agent-call>
+	<name>coding-agent</name>
+	<input>
+		Generate the file AgentService based on the following specifications:
+		The AgentService class needs to implement the following methods:
+		- exampleMethod - returns string with value "Hello World"
+	</input>
+</mm-agent-call>
+```
+
+Some agents can run in background and some will require user input so will have to run in foreground.
+This will be specified using the `userInput` flag on the agent, if `userInput` is true then the agent will run in the foreground and it's output will be appended just like continuing the current conversation.
+If the `userInput` is `false` then the agent will run in the background and the output will only be stored in the `ai/chats/{user-name}/{chat-name}/resources/{index}/output.md` file.
+If the agent has a specific output to return to the agent that called it then that output will be appended to the conversation and the conversation will continue from there by calling the model.
+
+If the agent executes a tool then MindMerge listener will execute the tool with the provided parameters, get the output from the tool, both stdout and stderr and send that output to the calling agent by appending it in the chat and calling the model again.
+
+If the agent generates a file then MindMerge listener will take the output of that file and save it in the resources folder like described above, ex: `ai/chats/{user-name}/{chat-name}/resources/{index}/file.txt`
+
+The index of the chat will get incremented by each step, either the user sends more data, the agent calls another agent or a tool, all of these will increment the current step.
+
+Generating diffs will take a [specific format](https://github.com/paul-gauthier/aider/blob/main/aider/coders/udiff_prompts.py) for the diff(more [here](https://aider.chat/docs/unified-diffs.html)), this diff format parsing will be implemented by MindMerge by porting over the [Aider](https://github.com/paul-gauthier/aider/blob/main/aider/coders/udiff_coder.py) python code.
+
+The MindMerge start command will also support automatically copying files to their specified folder, automatically applying diffs and auto-commiting at every step but these will be implemented later.

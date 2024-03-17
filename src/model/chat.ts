@@ -1,13 +1,14 @@
-import { Agent, Message } from "./";
+import {Agent, Message} from "./";
+import {ReferencedFile} from "./referenced-file";
 
 export class Chat {
     agent: Agent;
     messages: Message[];
-    // model: string;
+    referencedFiles: ReferencedFile[] = [];
 
-    constructor(agent: Agent, messages: Message[]) {
+    constructor(agent: Agent, messages: Message[], referencedFiles: ReferencedFile[] = []) {
         this.agent = agent;
         this.messages = messages;
-        // this.model = model;
+        this.referencedFiles = referencedFiles;
     }
 }

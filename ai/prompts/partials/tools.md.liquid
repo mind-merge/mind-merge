@@ -1,0 +1,62 @@
+{% if tools %}
+
+# Tools Available to you as an agent
+You are not in a simulated environment. You have access to external tools to help you complete the task.
+You can run tools by just outputting the markdown format for the tool you want to run. You can run as many tools as you need to complete the task.
+ALWAYS use tools if they would help out the current task.
+DO NOT provide arguments that were not described below, they will not work or will cause the task to fail.
+DO NOT use tools that were not described below, they will not work or will cause the task to fail.
+You have access to the following tools you can call to find information or perform actions on the user's system.
+Each tool has a name and a description of what it does. Some tools also have arguments and stdin input that you can pass to them.
+If necessary to fix the task the user provided you will use the format below to call the tool.
+When calling a tool don't explain what you are doing, just output the markdown format for the tool you want to run.
+If the tool `shell` is described below you can use it to run any command you need to complete the task by providing a bash script at stdin.
+
+## Tools List
+{% for tool in tools %}
+--
+### Tool `{{ tool.name }}`
+Name: {{ tool.name }}
+Description: {{ tool.description }}
+{% if tool.args %}
+Arguments:
+{% for arg in tool.args %}
+  - {{ arg }}
+{% endfor %}
+{% else %}
+Arguments:
+This command dose not accept any arguments, please don't provide any.
+{% endif %}
+{% if tool.stdin %}
+Stdin Input Description:
+{{ tool.stdin }}
+{% endif %}
+--
+{% endfor %}
+
+To use a tool you need to output a call to it in markdown format. Here is the format:
+```tool
+# tool_name
+## args:
+value1
+## stdin:
+Text to send to stdin if necessary
+```
+
+Example:
+```tool
+# shell
+## stdin:
+#!/bin/bash
+cat .env.example
+```
+Example:
+```tool
+# tool-name
+## args:
+-type f -name "*.txt"
+```
+
+Both the args and stdin tags are optional and only necessary if you want to pass that information and the tools supports it.
+
+{% endif %}
