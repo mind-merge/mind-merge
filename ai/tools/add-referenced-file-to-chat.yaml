@@ -1,0 +1,5 @@
+command: ./ai/tools/add-referenced-file-to-chat.sh
+description: Add a referenced file to the chat file so it can be referenced on the next message
+args:
+  - The chat file to add the referenced file to
+  - The file to add to the chat

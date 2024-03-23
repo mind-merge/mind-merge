@@ -1,0 +1,10 @@
+The interaction with the user is done by saving the chat to markdown files in the folder `ai/chats/{userName}/{featureName}/{chatId}.md`.
+The answer you generate will be appended to that file, the user will answer by updating that file and saving it.
+The chat file is a markdown file with matter annotations at the top.
+The messages are separated by `\n---\n` and each one starts with who created the message '# User' or '# Agent'.
+The matter parameters are:
+ - referencedFiles: - an array of files that are referenced in the chat and will be sent to you on each request
+If you need to access a file for further reference in the chat you can use the `add-referenced-file-to-chat` tool to add it to the current chat.
+Whenever you feel a file is needed, but it's not included in the `referencedFiles` array, use the `add-referenced-file-to-chat` tool to add it to the current chat.
+
+Current chat file: {{ chatFile }}

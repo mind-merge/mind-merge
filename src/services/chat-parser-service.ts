@@ -50,6 +50,9 @@ export class ChatParserService {
 
     async parseChatFile(filePath: string):Promise<Chat | undefined> {
         const fileContent = fs.readFileSync(filePath, 'utf8');
+        // Get the base dir of the chat file and generate the path to the resources directory
+        const baseDir = path.dirname(filePath);
+        
         let { content, data } = matter(fileContent);
 
         data = data ?? {};
@@ -66,6 +69,7 @@ export class ChatParserService {
             const lines = chunk.split('\n');
             let role: Role = Role.USER; // Default role is User
             let messageText = '';
+            let toolOutputFiles: Array<{content: string, fileName: string, tool:string}> = [];
 
             if (lines[0].startsWith('# Agent')) {
                 role = Role.ASSISTANT;
@@ -74,12 +78,29 @@ export class ChatParserService {
                 messageText = lines.slice(1).join('\n');
             } else if (lines[0].startsWith('# Tool')) {
                 role = Role.USER;
+                // Check if the tool output files are specified in the message
+                // the tool output files are referenced by the file name in Markdown link format
+                // [Tool ${tool.name} output](${toolOutputFilename})
                 messageText = lines.slice(1).join('\n');
+                const toolOutputFilesMatch = chunk.matchAll(/\[Tool ([^\]]+) output]\(([^)]+)\)/g);
+                if (toolOutputFilesMatch) {
+                    // map toolOutputFilesMatch to an array of objects with toolName and file name
+                    for (const match of toolOutputFilesMatch) {
+                        toolOutputFiles.push({content: '', fileName: match[2], tool: match[1]});
+                    }
+
+                    // Load contents of files and replace the Markdown link with the file content
+                    for (const tool of toolOutputFiles) {
+                        const toolOutputFileContent = fs.readFileSync(baseDir+'/'+tool.fileName, 'utf8');
+                        tool.content = toolOutputFileContent;
+                        messageText = messageText.replace(`[Tool ${tool.tool} output](${tool.fileName})`, `---\n${toolOutputFileContent}\n---\n`);
+                    }
+                }
             }  else {
                 messageText = lines.join('\n');
             }
 
-            messages.push(new Message(role, messageText.trim(), new Date(createdAt)));
+            messages.push(new Message(role, messageText.trim(), new Date(createdAt), toolOutputFiles));
         }
 
         const agent = await this.agentsService.getAgent(agentName);
@@ -95,16 +116,22 @@ export class ChatParserService {
             return;
         }
 
-        return new Chat(agent, messages, referencedFiles);
+        return new Chat(filePath, agent, messages, referencedFiles);
     }
 
     private async loadReferencedFiles(referencedFiles: string[]): Promise<Array<ReferencedFile>> {
-        return referencedFiles.map((file: string) => {
-            const content = fs.readFileSync(file, 'utf8');
-            const ext = path.extname(file);
-            const markdownFormat = this.extToMarkdown[ext] || 'text';
+        // eslint-disable-next-line unicorn/no-array-reduce
+        return referencedFiles.reduce((acc: ReferencedFile[], file: string) => {
+            if (fs.existsSync(file)) {
+                const content = fs.readFileSync(file, 'utf8');
+                const ext = path.extname(file);
+                const markdownFormat = this.extToMarkdown[ext] || 'text';
+                acc.push(new ReferencedFile(file, content, ext, markdownFormat));
+            } else {
+                ux.logToStderr(ux.colorize('red', `File ${file} not found, it will be skipped`));
+            }
 
-            return new ReferencedFile(file, content, ext, markdownFormat);
-        });
+            return acc;
+        }, []);
     }
 }

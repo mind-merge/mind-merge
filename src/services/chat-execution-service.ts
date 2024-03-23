@@ -13,6 +13,7 @@ import {TemplateService} from "./template-service";
 import {ToolsService} from "./tools-service";
 
 import matter = require("gray-matter");
+import * as path from "node:path";
 
 // eslint-disable-next-line new-cap
 @Service()
@@ -33,6 +34,8 @@ export class ChatExecutionService {
         tools=[...tools, ...this.toolsService.getAgentTools(chat.agent.name)];
 
         const templateData = {
+            chatFile: chat.fileName,
+            currentDateTime: new Date(),
             referencedFiles: chat.referencedFiles,
             tools
         };
@@ -66,7 +69,7 @@ export class ChatExecutionService {
 
                     while (output.toolsCalled.length > 0 && toolCalls < maxToolCalls) {
                         for (const tool of output.toolsCalled) {
-                            const newMessage = new Message(Role.USER, tool.output, new Date());
+                            const newMessage = new Message(Role.USER, tool.chatMessage, new Date());
                             chat.messages.push(newMessage);
                         }
 
@@ -118,19 +121,22 @@ export class ChatExecutionService {
         // Wait for all tools to finish
         const outputPromises = toolsCalled.map(async (tool) => tool.output);
         const outputs = await Promise.all(outputPromises);
-        for (const [i, output] of toolsCalled.entries()) {
-            let str = `\n\n---\n# Tool\n## Tool ${output.name} output:\n`;
-            str += "```text\n"+outputs[i]+"\n```\n\n---\n";
+        for (const [i, tool] of toolsCalled.entries()) {
+            const toolOutputFilename = this.generateToolOutputFilename(filePath, tool.name);
+            this.saveToolOutputToFile(outputs[i], toolOutputFilename.filePath);
 
-            fs.appendFileSync(filePath, str);
-            console.log(ux.colorize('green', `\nAppended tool ${output.name} output to file: ${filePath}`));
-            process.stdout.write(str);
+            const header = `# Tool ${tool.name}\nHere is the output of the tool you called, please check if it completed successfully and try to fix it if it didn't.\n`;
+            const chatMessage = `${header}---\n${outputs[i]}\n---\n`;
+            const fileMessage = `\n\n---\n${header}[Tool ${tool.name} output](${toolOutputFilename.shortPath})\n\n---\n`;
+
+            fs.appendFileSync(filePath, fileMessage);
+
+            console.log(ux.colorize('green', `\nTool ${tool.name} output dumped to file: ${toolOutputFilename}`));
+            process.stdout.write(fileMessage);
             ret.push({
-                args: output.args,
-                chatMessage: str,
-                name: output.name,
+                ...tool,
+                chatMessage,
                 output: outputs[i],
-                stdin: output.stdin
             });
         }
 
@@ -142,4 +148,40 @@ export class ChatExecutionService {
         const apiData = await model.completeChatRequest(request);
         return this.processModelOutput(apiData, filePath);
     }
+
+    private generateToolOutputFilename(chatFile: string, toolName: string): {
+        directory: string
+        fileName: string;
+        filePath: string;
+        shortPath: string;
+    } {
+        // Get directory from chat file, relative to the current working directory
+        let directory = path.dirname(chatFile);
+        // keep the dir relative to the current working directory
+        if (directory.startsWith(process.cwd())) {
+            directory = directory.slice(process.cwd().length + 1);
+        }
+
+        // Check if `resources` directory exists and create it if it doesn't
+        const resourcesDir = path.join(directory, 'resources');
+        if (!fs.existsSync(resourcesDir)) {
+            fs.mkdirSync(resourcesDir);
+        }
+
+        // Generates a unique filename for a tool output in the resources directory
+        const timestamp = Date.now();
+
+        return {
+            directory: resourcesDir,
+            fileName: `${toolName}-${timestamp}.txt`,
+            filePath: path.join(resourcesDir, `${toolName}-${timestamp}.txt`),
+            shortPath: path.join('resources', `${toolName}-${timestamp}.txt`)
+        };
+    }
+
+    private saveToolOutputToFile(toolOutput: string, filePath: string) {
+        // Saves tool output to a file
+        fs.writeFileSync(filePath, toolOutput, 'utf8');
+    }
+
 }

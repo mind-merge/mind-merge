@@ -1,6 +1,7 @@
 import { Service } from "typedi";
 
-import { OpenAIModel, IModel } from '../model';
+import { OpenAIModel } from '../model';
+import {IModel} from "../model/model";
 
 @Service()
 export class ModelService {

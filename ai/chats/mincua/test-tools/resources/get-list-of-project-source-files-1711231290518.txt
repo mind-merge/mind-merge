@@ -1,0 +1,23 @@
+src/constants/app.constant.ts
+src/constants/index.ts
+src/model/agent.ts
+src/model/referenced-file.ts
+src/model/chat.ts
+src/model/model.ts
+src/model/message.ts
+src/model/open-ai-model.ts
+src/model/index.ts
+src/commands/start/index.ts
+src/commands/hello/index.ts
+src/commands/hello/world.ts
+src/index.ts
+src/services/tools-service.ts
+src/services/help-service.ts
+src/services/chat-monitor-service.ts
+src/services/agents-service.ts
+src/services/chat-parser-service.ts
+src/services/model-service.ts
+src/services/template-service.ts
+src/services/chat-execution-service.ts
+src/services/project-service.ts
+[tool exit code: 0]
