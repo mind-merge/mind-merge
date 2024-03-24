@@ -7,17 +7,17 @@ import {Service} from "typedi";
 import {Agent} from '../model';
 
 import matter = require("gray-matter");
-import {ToolsService} from "./tools-service";
+import {ToolService} from "./tool-service";
 
 // eslint-disable-next-line new-cap
 @Service()
-export class AgentsService {
+export class AgentService {
     agents: Map<string, Agent> = new Map<string, Agent>();
     private watcher: chokidar.FSWatcher | undefined;
 
     // eslint-disable-next-line no-useless-constructor
     constructor(
-        private toolsService: ToolsService
+        private toolsService: ToolService
     ) {}
 
     async getAgent(name: string): Promise<Agent> {

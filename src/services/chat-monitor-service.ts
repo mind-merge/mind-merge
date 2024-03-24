@@ -30,7 +30,7 @@ export class ChatMonitorService {
 
         if (fileContent.endsWith("\n---\n")) {
             this.processingFiles.add(filePath);
-            await this.chatExecutionService.processChat(filePath, fileContent);
+            await this.chatExecutionService.startChatProcessing(filePath, fileContent);
             this.processingFiles.delete(filePath);
         }
     }

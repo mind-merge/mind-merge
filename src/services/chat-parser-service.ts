@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { Service } from "typedi";
 
 import { Chat, Message, ReferencedFile, Role } from '../model';
-import { AgentsService } from './agents-service';
+import { AgentService } from './agent-service';
 
 import matter = require("gray-matter");
 
@@ -45,7 +45,7 @@ export class ChatParserService {
 
     // eslint-disable-next-line no-useless-constructor
     constructor(
-        private agentsService: AgentsService,
+        private agentsService: AgentService,
     ) { }
 
     async parseChatFile(filePath: string):Promise<Chat | undefined> {
@@ -69,7 +69,7 @@ export class ChatParserService {
             const lines = chunk.split('\n');
             let role: Role = Role.USER; // Default role is User
             let messageText = '';
-            let toolOutputFiles: Array<{content: string, fileName: string, tool:string}> = [];
+            const toolOutputFiles: Array<{content: string, fileName: string, tool:string}> = [];
 
             if (lines[0].startsWith('# Agent')) {
                 role = Role.ASSISTANT;
@@ -116,7 +116,7 @@ export class ChatParserService {
             return;
         }
 
-        return new Chat(filePath, agent, messages, referencedFiles);
+        return new Chat(filePath, agent, messages, referencedFiles, data.parentChatFile, data);
     }
 
     private async loadReferencedFiles(referencedFiles: string[]): Promise<Array<ReferencedFile>> {

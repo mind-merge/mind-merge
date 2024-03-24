@@ -6,29 +6,41 @@ import {Service} from "typedi";
 
 import {Agent, Chat, Message, Role} from '../model';
 import {ChatCompletionRequest} from "../model/model";
-import {AgentsService} from './agents-service';
+import {Task} from "../model/task";
 import {ChatParserService} from "./chat-parser-service";
+import {EditorInteractionService} from "./editor-interaction-service";
+import {GlobalFlagsService} from "./global-flags-service";
 import {ModelService} from "./model-service";
+import {TaskService} from "./task-service";
 import {TemplateService} from "./template-service";
-import {ToolsService} from "./tools-service";
+import {PendingToolCall, ToolCall, ToolService} from "./tool-service";
 
 import matter = require("gray-matter");
-import * as path from "node:path";
+
+interface ChatProcessingOutput {
+    output: string;
+    tasksCreated: Array<Task>;
+    toolsCalled: Array<ToolCall>;
+}
 
 // eslint-disable-next-line new-cap
 @Service()
 export class ChatExecutionService {
 
+    private processingFiles: Set<string> = new Set();
+
     // eslint-disable-next-line no-useless-constructor
     constructor(
         private chatParserService: ChatParserService,
         private modelService: ModelService,
-        private agentsService: AgentsService,
         private templateService: TemplateService,
-        private toolsService: ToolsService
+        private toolsService: ToolService,
+        private taskService: TaskService,
+        private globalFlagsService: GlobalFlagsService,
+        private editorInteractionService: EditorInteractionService
     ) { }
 
-    async prepareChatForModel(chat:Chat): Promise<ChatCompletionRequest> {
+    async generateChatCompletionRequest(chat:Chat): Promise<ChatCompletionRequest> {
         // Check if agent format is liquid or md
         let tools = this.toolsService.getAllGlobalTools();
         tools=[...tools, ...this.toolsService.getAgentTools(chat.agent.name)];
@@ -53,46 +65,13 @@ export class ChatExecutionService {
         } as ChatCompletionRequest;
     }
 
-    async processChat(filePath: string, fileContent: string) {
-        ux.log(`Processing chat file: ${filePath}`);
-
-        if (fileContent) {
-            const chat: Chat|undefined = await this.chatParserService.parseChatFile(filePath);
-            const agent = chat ? chat.agent : null;
-            if (chat && agent) {
-                try {
-                    const maxToolCalls = process.env.MAX_TOOL_CALLS ? Number.parseInt(process.env.MAX_TOOL_CALLS, 10) : 5;
-                    let toolCalls = 0;
-
-                    let request = await this.prepareChatForModel(chat);
-                    let output = await this.executeChatRequest(agent, request, filePath);
-
-                    while (output.toolsCalled.length > 0 && toolCalls < maxToolCalls) {
-                        for (const tool of output.toolsCalled) {
-                            const newMessage = new Message(Role.USER, tool.chatMessage, new Date());
-                            chat.messages.push(newMessage);
-                        }
-
-                        // eslint-disable-next-line no-await-in-loop
-                        request = await this.prepareChatForModel(chat);
-                        // eslint-disable-next-line no-await-in-loop
-                        output = await this.executeChatRequest(agent, request, filePath);
-                        toolCalls++;
-                    }
-
-                    fs.appendFileSync(filePath, '\n\n---\n# User\n');
-                    console.log(ux.colorize('green', `\nAppended answer to file: ${filePath}`));
-                } catch (error) {
-                    console.error(error);
-                }
-            }
-        }
-    }
-
-    async processModelOutput(data: Stream<ChatCompletionChunk>, filePath: string):Promise<{output: string, toolsCalled: Array<{args: null | string[], chatMessage: string, name: string, output: string, stdin: null | string}>}> {
+    async  processChatCompletionRequestOutput(chat:Chat, data: Stream<ChatCompletionChunk>, filePath: string):Promise<ChatProcessingOutput> {
         let output:string = '';
-        let outputPart:string = '';
-        const toolsCalled: Array<{args: null | string[], name: string, output: Promise<string>, stdin: null | string}> = [];
+        let toolBufferPart:string = '';
+        let taskBufferPart:string = '';
+        let taskOutputBufferPart:string = '';
+        const pendingToolCalls: Array<PendingToolCall> = [];
+        const tasksCreated: Array<Task> = [];
         fs.appendFileSync(filePath, '# Agent\n\n');
         for await (const chunk of data) {
             for (const choice of chunk.choices) {
@@ -101,87 +80,116 @@ export class ChatExecutionService {
                     fs.appendFileSync(filePath, deltaContent);
                     process.stdout.write(deltaContent.toString());
                     output += deltaContent.toString();
-                    outputPart += deltaContent.toString();
+                    toolBufferPart += deltaContent.toString();
+                    taskBufferPart += deltaContent.toString();
+                    taskOutputBufferPart += deltaContent.toString();
                     // check for start and end of tool call tags
 
-                    const toolCallMatch = outputPart.match(/```tool\n([\S\s]*?)\n```/im);
+                    const toolCallMatch = toolBufferPart.match(/```tool\n([\S\s]*?)\n```/im);
                     if (toolCallMatch) {
                         const toolCall = toolCallMatch[0];
                         const tool = this.toolsService.parseCallAndStartToolExecution(toolCall);
-                        toolsCalled.push(tool);
-                        outputPart = '';
+                        pendingToolCalls.push(tool);
+                        toolBufferPart = '';
+                    }
+
+                    const taskCallMatch = taskBufferPart.match(/```task\n([\S\s]*?)\n```/im);
+                    if (taskCallMatch) {
+                        const taskCall = taskCallMatch[0];
+                        const task = this.taskService.parseCallAndStartTaskExecution(taskCall, filePath);
+
+                        if (task)
+                            tasksCreated.push(task);
+                        else
+                            ux.logToStderr(ux.colorize('red', `Task parsing failed for task call: ${taskCall}`))
+                        taskBufferPart = '';
+                    }
+
+                    const taskOutputMatch = taskOutputBufferPart.match(/```task-output\n([\S\s]*?)\n```/im);
+                    if (taskOutputMatch) {
+                        taskOutputBufferPart = '';
+                        const taskOutput = taskOutputMatch[0];
+
+                        this.taskService.parseTaskOutputBlock(chat, taskOutput);
                     }
                 }
             }
         }
 
-        if (toolsCalled.length === 0) return { output, toolsCalled: [] };
+        const ret:ChatProcessingOutput = { output, tasksCreated, toolsCalled: [] };
 
-        const ret = [];
-        // Wait for all tools to finish
-        const outputPromises = toolsCalled.map(async (tool) => tool.output);
-        const outputs = await Promise.all(outputPromises);
-        for (const [i, tool] of toolsCalled.entries()) {
-            const toolOutputFilename = this.generateToolOutputFilename(filePath, tool.name);
-            this.saveToolOutputToFile(outputs[i], toolOutputFilename.filePath);
-
-            const header = `# Tool ${tool.name}\nHere is the output of the tool you called, please check if it completed successfully and try to fix it if it didn't.\n`;
-            const chatMessage = `${header}---\n${outputs[i]}\n---\n`;
-            const fileMessage = `\n\n---\n${header}[Tool ${tool.name} output](${toolOutputFilename.shortPath})\n\n---\n`;
-
-            fs.appendFileSync(filePath, fileMessage);
-
-            console.log(ux.colorize('green', `\nTool ${tool.name} output dumped to file: ${toolOutputFilename}`));
-            process.stdout.write(fileMessage);
-            ret.push({
-                ...tool,
-                chatMessage,
-                output: outputs[i],
-            });
+        if (pendingToolCalls.length > 0) {
+            ret.toolsCalled = await this.toolsService.processTools(pendingToolCalls, filePath);
         }
 
-        return { output, toolsCalled: ret } ;
+        return ret;
     }
 
-    private async executeChatRequest(agent: Agent, request: ChatCompletionRequest, filePath: string) {
+    async startChatProcessing(filePath: string, fileContent: string) {
+        if (this.processingFiles.has(filePath)) {
+            ux.log(`File ${filePath} is already being processed.`);
+            return;
+        }
+
+        ux.log(`Processing chat file: ${filePath}`);
+        if (!fileContent) {
+            ux.logToStderr(ux.colorize('red', `Chat file ${filePath} is empty.`));
+            return;
+        }
+
+        const chat: Chat|undefined = await this.chatParserService.parseChatFile(filePath);
+        const agent = chat ? chat.agent : null;
+        if (!chat) {
+            ux.logToStderr(ux.colorize('red', `Chat file ${filePath} could not be parsed.`));
+            return;
+        }
+
+        if (!agent) {
+            ux.logToStderr(ux.colorize('red', `Agent ${chat.agent.name} not found, chat could not be loaded`));
+            return;
+        }
+
+        this.processingFiles.add(filePath);
+        try {
+            const maxToolCalls = (this.globalFlagsService.getFlag('maxToolCalls') ?? 5) as number;
+            let toolCalls = 0;
+
+            let request = await this.generateChatCompletionRequest(chat);
+            let apiData = await this.executeChatCompletionRequest(agent, request);
+            let output = await this.processChatCompletionRequestOutput(chat, apiData, filePath);
+
+            // First we handle tool calls
+            while (output.toolsCalled.length > 0 && toolCalls < maxToolCalls) {
+                for (const tool of output.toolsCalled) {
+                    const newMessage = new Message(Role.USER, tool.chatMessage, new Date());
+                    chat.messages.push(newMessage);
+                }
+
+                // eslint-disable-next-line no-await-in-loop
+                request = await this.generateChatCompletionRequest(chat);
+                // eslint-disable-next-line no-await-in-loop
+                apiData = await this.executeChatCompletionRequest(agent, request);
+                // eslint-disable-next-line no-await-in-loop
+                output = await this.processChatCompletionRequestOutput(chat, apiData, filePath);
+                toolCalls++;
+            }
+
+            fs.appendFileSync(filePath, '\n\n---\n# User\n');
+            console.log(ux.colorize('green', `\nAppended answer to file: ${filePath}`));
+            this.editorInteractionService.openChatFileInEditor(filePath);
+        } catch (error) {
+            console.error(error);
+        }
+
+        this.processingFiles.delete(filePath);
+    }
+
+    private async executeChatCompletionRequest(agent: Agent, request: ChatCompletionRequest) {
         const model = await this.modelService.getModel(agent.model ?? 'gpt-4-preview');
-        const apiData = await model.completeChatRequest(request);
-        return this.processModelOutput(apiData, filePath);
+        return model.completeChatRequest(request);
     }
 
-    private generateToolOutputFilename(chatFile: string, toolName: string): {
-        directory: string
-        fileName: string;
-        filePath: string;
-        shortPath: string;
-    } {
-        // Get directory from chat file, relative to the current working directory
-        let directory = path.dirname(chatFile);
-        // keep the dir relative to the current working directory
-        if (directory.startsWith(process.cwd())) {
-            directory = directory.slice(process.cwd().length + 1);
-        }
 
-        // Check if `resources` directory exists and create it if it doesn't
-        const resourcesDir = path.join(directory, 'resources');
-        if (!fs.existsSync(resourcesDir)) {
-            fs.mkdirSync(resourcesDir);
-        }
 
-        // Generates a unique filename for a tool output in the resources directory
-        const timestamp = Date.now();
-
-        return {
-            directory: resourcesDir,
-            fileName: `${toolName}-${timestamp}.txt`,
-            filePath: path.join(resourcesDir, `${toolName}-${timestamp}.txt`),
-            shortPath: path.join('resources', `${toolName}-${timestamp}.txt`)
-        };
-    }
-
-    private saveToolOutputToFile(toolOutput: string, filePath: string) {
-        // Saves tool output to a file
-        fs.writeFileSync(filePath, toolOutput, 'utf8');
-    }
 
 }

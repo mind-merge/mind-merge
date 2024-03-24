@@ -130,3 +130,39 @@ This plan provides a structured approach to integrating agent interaction capabi
 
 ---
 # User
+
+say hello to me!
+
+---
+# Agent
+
+Hello! How can I assist you further today?
+
+---
+# User
+
+say hello again!
+
+---
+# Agent
+
+Hello again! What's next on our agenda?
+
+---
+# User
+
+again
+
+---
+# Agent
+
+Hello once more! Ready to tackle the next challenge?
+
+---
+# User
+# Agent
+
+Hello once more! Ready for what comes next?
+
+---
+# User

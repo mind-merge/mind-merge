@@ -6,9 +6,24 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Service} from "typedi";
 
+export interface PendingToolCall {
+    args: null | string[];
+    name: string;
+    output: Promise<string>;
+    stdin: null | string
+}
+
+export interface ToolCall {
+    args: null | string[];
+    chatMessage: string;
+    name: string;
+    output: string;
+    stdin: null | string;
+}
+
 // eslint-disable-next-line new-cap
 @Service()
-export class ToolsService {
+export class ToolService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private globalTools: Map<string, any> = new Map();
 
@@ -121,7 +136,7 @@ export class ToolsService {
         }
     }
 
-    parseCallAndStartToolExecution(toolCall: string, fromAgent?: string) {
+    parseCallAndStartToolExecution(toolCall: string, fromAgent?: string): PendingToolCall {
         // The tool call is expected to be in the following format:
         // ```tool
         // # tool_name
@@ -158,6 +173,35 @@ export class ToolsService {
         };
     }
 
+    async processTools(pendingToolCalls: Array<PendingToolCall>, filePath: string):Promise<Array<ToolCall>>
+    {
+        const ret = [];
+        // Wait for all tools to finish
+        const outputPromises = pendingToolCalls.map(async (tool) => tool.output);
+        const outputs = await Promise.all(outputPromises);
+        for (const [i, tool] of pendingToolCalls.entries()) {
+            const toolOutputFilename = this.generateToolOutputFilename(filePath, tool.name);
+            this.saveToolOutputToFile(outputs[i], toolOutputFilename.filePath);
+
+            const header = `# Tool ${tool.name}\nHere is the output of the tool you called, please check if it `+
+                                  `completed successfully and try to fix it if it didn't.\n`;
+            const chatMessage = `${header}---\n${outputs[i]}\n---\n`;
+            const fileMessage = `\n\n---\n${header}[Tool ${tool.name} output](${toolOutputFilename.shortPath})\n\n---\n`;
+
+            fs.appendFileSync(filePath, fileMessage);
+
+            console.log(ux.colorize('green', `\nTool ${tool.name} output dumped to file: ${toolOutputFilename}`));
+            process.stdout.write(fileMessage);
+            ret.push({
+                ...tool,
+                chatMessage,
+                output: outputs[i],
+            });
+        }
+
+        return ret;
+    }
+
     private addWatcher(directory: string, toolsMap: Map<string, any>) {
         const watcher = chokidar.watch(path.join(directory, '*.yaml'), { persistent: true });
 
@@ -166,6 +210,37 @@ export class ToolsService {
             .on('change', (filePath) => this.handleFileChange(filePath, toolsMap));
 
         this.watchers.set(directory, watcher);
+    }
+
+    private generateToolOutputFilename(chatFile: string, toolName: string): {
+        directory: string
+        fileName: string;
+        filePath: string;
+        shortPath: string;
+    }
+    {
+        // Get directory from chat file, relative to the current working directory
+        let directory = path.dirname(chatFile);
+        // keep the dir relative to the current working directory
+        if (directory.startsWith(process.cwd())) {
+            directory = directory.slice(process.cwd().length + 1);
+        }
+
+        // Check if `resources` directory exists and create it if it doesn't
+        const resourcesDir = path.join(directory, 'resources');
+        if (!fs.existsSync(resourcesDir)) {
+            fs.mkdirSync(resourcesDir);
+        }
+
+        // Generates a unique filename for a tool output in the resources directory
+        const timestamp = Date.now();
+
+        return {
+            directory: resourcesDir,
+            fileName: `${toolName}-${timestamp}.txt`,
+            filePath: path.join(resourcesDir, `${toolName}-${timestamp}.txt`),
+            shortPath: path.join('resources', `${toolName}-${timestamp}.txt`)
+        };
     }
 
     private loadYamlFile(filePath: string, toolsMap: Map<string, any>): void {
@@ -180,5 +255,10 @@ export class ToolsService {
         }
 
         ux.log(`Loaded tool: ${toolName} from ${filePath}`);
+    }
+
+    private saveToolOutputToFile(toolOutput: string, filePath: string) {
+        // Saves tool output to a file
+        fs.writeFileSync(filePath, toolOutput, 'utf8');
     }
 }

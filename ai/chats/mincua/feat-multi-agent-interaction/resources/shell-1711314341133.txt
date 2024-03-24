@@ -1,0 +1,2 @@
+Commands directory exists.
+[tool exit code: 0]
