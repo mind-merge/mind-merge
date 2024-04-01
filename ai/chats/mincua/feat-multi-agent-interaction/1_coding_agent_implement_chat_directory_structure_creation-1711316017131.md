@@ -31,3 +31,42 @@ who created the task.
 ```
 
 ---
+# Agent
+
+```typescript
+import fs from 'fs';
+import path from 'path';
+
+interface CommandArguments {
+  user: string;
+  feature: string;
+}
+
+function createChatDirectory(args: CommandArguments) {
+  const { user, feature } = args;
+  const dirPath = `ai/chats/${user}/${feature}`;
+
+  try {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+      console.log(`Directory structure ${dirPath} created successfully.`);
+    } else {
+      console.log(`Directory structure ${dirPath} already exists.`);
+    }
+  } catch (error: any) {
+    console.error(`Failed to create directory structure: ${error.message}`);
+  }
+}
+
+// Example usage:
+// Assuming the parsing of arguments has been done, and we have `user` and `feature`
+const args: CommandArguments = {
+  user: 'john_doe',
+  feature: 'private_chats'
+};
+
+createChatDirectory(args);
+```
+
+---
+# User

@@ -8,7 +8,7 @@ export class TemplateService {
 
     constructor() {
         this.liquidEngine = new Liquid({
-            extname: '.md',
+            extname: '.md.liquid',
             root: ['ai/prompts/']
         });
     }
