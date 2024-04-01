@@ -9,7 +9,7 @@ export class TemplateService {
     constructor() {
         this.liquidEngine = new Liquid({
             extname: '.md.liquid',
-            root: ['ai/prompts/']
+            root: ['ai/prompts/', 'node_modules']
         });
     }
 
