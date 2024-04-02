@@ -83,6 +83,7 @@
     "prepack": "yarn build && oclif manifest && oclif readme",
     "prepare": "yarn build",
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
+    "test-cucumber": "./node_modules/.bin/cucumber-js -p default",
     "version": "oclif readme && git add README.md"
   },
   "version": "0.0.1",
