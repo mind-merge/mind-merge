@@ -1,6 +1,5 @@
-
-import {encodeChat, isWithinTokenLimit} from "gpt-tokenizer";
-import {ChatMessage} from "gpt-tokenizer/esm/GptEncoding";
+// import {encodeChat, isWithinTokenLimit} from "gpt-tokenizer";
+// import {ChatMessage} from "gpt-tokenizer/esm/GptEncoding";
 // eslint-disable-next-line import/no-named-as-default
 import OpenAI from 'openai';
 import {Chat, ChatCompletionChunk, ChatCompletionMessageParam} from "openai/resources";
@@ -34,12 +33,10 @@ export class OpenAIModel implements IModel {
             ...request,
             // eslint-disable-next-line camelcase
             max_tokens: this.maxOutputTokens,
-            messages: request.messages.map((message) => {
-                return {
+            messages: request.messages.map((message) => ({
                     content: message.content,
                     role: message.role
-                } as ChatCompletionMessageParam;
-            }),
+                } as ChatCompletionMessageParam)),
             model: this.modelName,
             stream: true
             
@@ -50,32 +47,32 @@ export class OpenAIModel implements IModel {
     }
 
     // Calculate the total tokens for the chat request using gpt-tokenizer
-    async getTotalTokensForChatRequest(request: ChatCompletionRequest): Promise<number> {
-        // Transform messages into the format required by encodeChat
-        // Keeping the structure similar to the given encodeChat example
-        const chat = request.messages.map(message => ({
-            content: message.content,
-            role: message.role.toLowerCase() // assuming 'role' matches 'system', 'assistant', etc.
-        } as ChatMessage));
-
-        // Encode the chat into tokens with gpt-tokenizer
-        const tokens = encodeChat(chat)
-
-        // Return the length of the token array as the total token count
-        return tokens.length;
-    }
-
-    // Check if the request is within the token limit using gpt-tokenizer
-    isRequestWithinTokenLimit(request: ChatCompletionRequest): boolean {
-        const messages = request.messages.map(message => ({
-            content: message.content,
-            role: message.role.toLowerCase() // assuming 'role' matches 'system', 'assistant', etc.
-        } as ChatMessage));
-
-        // Check if within token limit using isWithinTokenLimit from gpt-tokenizer
-        // isWithinTokenLimit returns false if over the limit, or the token count if under.
-        const isWithinLimit = isWithinTokenLimit(messages, this.maxInputTokens);
-
-        return Boolean(isWithinLimit); // Convert to boolean
-    }
+    // async getTotalTokensForChatRequest(request: ChatCompletionRequest): Promise<number> {
+    //     // Transform messages into the format required by encodeChat
+    //     // Keeping the structure similar to the given encodeChat example
+    //     const chat = request.messages.map(message => ({
+    //         content: message.content,
+    //         role: message.role.toLowerCase() // assuming 'role' matches 'system', 'assistant', etc.
+    //     } as ChatMessage));
+    //
+    //     // Encode the chat into tokens with gpt-tokenizer
+    //     const tokens = encodeChat(chat)
+    //
+    //     // Return the length of the token array as the total token count
+    //     return tokens.length;
+    // }
+    //
+    // // Check if the request is within the token limit using gpt-tokenizer
+    // isRequestWithinTokenLimit(request: ChatCompletionRequest): boolean {
+    //     const messages = request.messages.map(message => ({
+    //         content: message.content,
+    //         role: message.role.toLowerCase() // assuming 'role' matches 'system', 'assistant', etc.
+    //     } as ChatMessage));
+    //
+    //     // Check if within token limit using isWithinTokenLimit from gpt-tokenizer
+    //     // isWithinTokenLimit returns false if over the limit, or the token count if under.
+    //     const isWithinLimit = isWithinTokenLimit(messages, this.maxInputTokens);
+    //
+    //     return Boolean(isWithinLimit); // Convert to boolean
+    // }
 }

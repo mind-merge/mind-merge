@@ -132,6 +132,6 @@ export interface IModel {
     // TODO: Add options type
     completeChatRequest(request: ChatCompletionRequest): Promise<Stream<ChatCompletionChunk>>;
 
-    getTotalTokensForChatRequest(request: ChatCompletionRequest): Promise<number>;
-    isRequestWithinTokenLimit(request: ChatCompletionRequest): boolean;
+    // getTotalTokensForChatRequest(request: ChatCompletionRequest): Promise<number>;
+    // isRequestWithinTokenLimit(request: ChatCompletionRequest): boolean;
 }

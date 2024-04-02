@@ -5,9 +5,9 @@ import * as path from 'node:path';
 import {Service} from "typedi";
 
 import {Agent} from '../model';
+import {ToolService} from "./tool-service";
 
 import matter = require("gray-matter");
-import {ToolService} from "./tool-service";
 
 // eslint-disable-next-line new-cap
 @Service()
