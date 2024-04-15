@@ -3,10 +3,6 @@ import * as chokidar from 'chokidar';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Service} from "typedi";
-
-import {Chat, Message, Role} from "../model";
-import {ChatParserService} from "./chat-parser-service";
-import {ModelService} from "./model-service";
 import {ChatExecutionService} from "./chat-execution-service";
 
 // eslint-disable-next-line new-cap
@@ -45,6 +41,4 @@ export class ChatMonitorService {
 
         ux.log(`Started monitoring chat files in: ${chatsDir}`)
     }
-
-
 }

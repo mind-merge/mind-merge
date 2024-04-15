@@ -21,7 +21,7 @@ export class ProjectService {
     ) {}
 
     async ensureDirectoriesExist() {
-        const directories = ['ai/tools', 'ai/prompts/agents', 'ai/chats'];
+        const directories = ['ai/tools', 'ai/prompts/agents', 'ai/chats', 'ai/prompts/partials'];
         let displayMessage = false;
 
         for (const dir of directories) {
@@ -31,6 +31,10 @@ export class ProjectService {
                 fs.mkdirSync(dirPath, { recursive: true });
                 console.log(ux.colorize('green', `Created directory: ${dirPath}`));
                 displayMessage = true;
+            }
+            const gitKeepFilePath = `${dirPath}/.gitkeep`;
+            if (!fs.existsSync(gitKeepFilePath)) {
+                fs.writeFileSync(gitKeepFilePath, ''); // create .gitkeep file if it doesn't exist
             }
         }
 

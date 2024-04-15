@@ -1,6 +1,8 @@
 import {Command, Flags, ux} from '@oclif/core'
 import 'reflect-metadata';
 import {Container} from "typedi";
+const fs = require('fs');
+import {execSync} from 'node:child_process';
 
 import {ProjectService} from "../../services/project-service";
 import {GlobalFlagsService} from "../../services/global-flags-service";
@@ -32,6 +34,57 @@ export default class Start extends Command {
     }),
   }
 
+  async installWithYarn() {
+    try {
+      execSync('yarn add @mm/main-agent', { stdio: 'inherit' });
+    } catch (error) {
+      console.error('Failed to install @mm/main-agent package with Yarn.');
+    }
+  }
+
+  async installWithNpm() {
+    try {
+      execSync('npm install @mm/main-agent', { stdio: 'inherit' });
+    } catch (error) {
+      console.error('Failed to install @mm/main-agent package with npm.');
+    }
+  }
+
+  async handleInitWithoutPackageJson() {
+    console.log('This project needs to be initialized with Yarn or npm.');
+
+    // Check if Yarn is installed
+    if (await this.isYarnInstalled()) {
+      console.log('Running yarn init...');
+      execSync('yarn init', { stdio: 'inherit' });
+      this.installWithYarn();
+    } else if (await this.isNpmInstalled()) {
+      console.log('Running npm init...');
+      execSync('npm init', { stdio: 'inherit' });
+      this.installWithNpm();
+    } else {
+      console.error('Neither Yarn nor npm is installed. Please install one of them.');
+    }
+  }
+
+  async isYarnInstalled() {
+    try {
+      execSync('yarn --version');
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async isNpmInstalled() {
+    try {
+      execSync('npm --version');
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
   async run(): Promise<void> {
     const {args, flags} = await this.parse(Start)
 
@@ -48,7 +101,22 @@ export default class Start extends Command {
 
     globalFlagsService.setFlag('maxToolCalls', flags.maxToolCalls);
 
-    projectService.initialize();
+    const projectDir = process.cwd();
+    const packageJsonPath = `${projectDir}/package.json`;
 
+    if (fs.existsSync(packageJsonPath)) {
+      // Project is using Yarn or npm
+      const isYarn = fs.existsSync(`${projectDir}/yarn.lock`);
+      if (isYarn) {
+        // await this.installWithYarn();  
+      } else {
+        // await this.installWithNpm();
+      }
+    } else {
+      // Project doesn't have a package.json file
+      // await this.handleInitWithoutPackageJson();
+    }
+
+    await projectService.initialize();
   }
 }
