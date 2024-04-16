@@ -36,17 +36,17 @@ export default class Start extends Command {
 
   async installWithYarn() {
     try {
-      execSync('yarn add @mm/main-agent', { stdio: 'inherit' });
+      execSync('yarn add mind-merge-ai', { stdio: 'inherit' });
     } catch (error) {
-      console.error('Failed to install @mm/main-agent package with Yarn.');
+      console.error('Failed to install mind-merge-ai package with Yarn.');
     }
   }
 
   async installWithNpm() {
     try {
-      execSync('npm install @mm/main-agent', { stdio: 'inherit' });
+      execSync('npm install mind-merge-ai', { stdio: 'inherit' });
     } catch (error) {
-      console.error('Failed to install @mm/main-agent package with npm.');
+      console.error('Failed to install mind-merge-ai package with npm.');
     }
   }
 
@@ -110,11 +110,11 @@ export default class Start extends Command {
       if (isYarn) {
         // await this.installWithYarn();  
       } else {
-        // await this.installWithNpm();
+        await this.installWithNpm();
       }
     } else {
       // Project doesn't have a package.json file
-      // await this.handleInitWithoutPackageJson();
+      await this.handleInitWithoutPackageJson();
     }
 
     await projectService.initialize();
