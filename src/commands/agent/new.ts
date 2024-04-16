@@ -1,6 +1,6 @@
 import { Command, Flags, ux } from '@oclif/core';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 export class NewAgent extends Command {
     static description = 'Creates a new agent with a specified name';
@@ -10,13 +10,33 @@ export class NewAgent extends Command {
     ];
 
     static flags = {
-        agentName: Flags.string({ char: 'n', description: 'name of the agent', required: true }),
+        agentName: Flags.string({
+            aliases: ['agent-name'],
+            char: 'n',
+            description: 'name of the agent',
+            helpLabel: '-n --agent-name',
+            required: true
+        }),
     };
+
+    async directoryExists(dirPath: string): Promise<boolean> {
+        try {
+            const stats = fs.statSync(dirPath);
+            return stats.isDirectory();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+            if (error.code === 'ENOENT') {
+                return false;
+            }
+
+            throw error;
+        }
+    }
 
     async run() {
         const { flags } = await this.parse(NewAgent);
 
-        const agentName = flags.agentName;
+        const {agentName} = flags;
 
         // Check if the ai/chats directory exists, if not error out
         const dirName = path.join(process.cwd(), 'ai/prompts/agents');
@@ -42,19 +62,6 @@ export class NewAgent extends Command {
             this.log(ux.colorize('green', `Agent '${agentName}' has been created successfully at ${agentFilePath}.`));
         } catch (error) {
             console.error('An error occurred while creating the agent:', error)
-        }
-    }
-
-    async directoryExists(dirPath: string): Promise<boolean> {
-        try {
-            const stats = fs.statSync(dirPath);
-            return stats.isDirectory();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-            if (error.code === 'ENOENT') {
-                return false;
-            }
-            throw error;
         }
     }
 }

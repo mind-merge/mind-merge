@@ -102,16 +102,13 @@ export default class Start extends Command {
     globalFlagsService.setFlag('maxToolCalls', flags.maxToolCalls);
 
     const projectDir = process.cwd();
+    ux.log("Project dir: ", ux.colorize('bgWhite', ux.colorize('blue', projectDir)));
     const packageJsonPath = `${projectDir}/package.json`;
 
     if (fs.existsSync(packageJsonPath)) {
       // Project is using Yarn or npm
       const isYarn = fs.existsSync(`${projectDir}/yarn.lock`);
-      if (isYarn) {
-        await this.installWithYarn();
-      } else {
-        await this.installWithNpm();
-      }
+      await (isYarn ? this.installWithYarn() : this.installWithNpm());
     } else {
       // Project doesn't have a package.json file
       await this.handleInitWithoutPackageJson();
