@@ -29,7 +29,7 @@ export class OpenAIModel implements IModel {
             throw new Error('The request must contain at least one message');
         }
 
-        const openAAIRequest: ChatCompletionCreateParamsStreaming = {
+        const openAIRequest: ChatCompletionCreateParamsStreaming = {
             ...request,
             // eslint-disable-next-line camelcase
             max_tokens: this.maxOutputTokens,
@@ -43,7 +43,7 @@ export class OpenAIModel implements IModel {
         };
 
         // noinspection TypeScriptValidateJSTypes
-        return openAI.chat.completions.create(openAAIRequest);
+        return openAI.chat.completions.create(openAIRequest);
     }
 
     // Calculate the total tokens for the chat request using gpt-tokenizer

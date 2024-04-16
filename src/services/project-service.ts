@@ -21,7 +21,7 @@ export class ProjectService {
     ) {}
 
     async ensureDirectoriesExist() {
-        const directories = ['ai/tools', 'ai/prompts/agents', 'ai/chats'];
+        const directories = ['ai/tools', 'ai/prompts/agents','ai/prompts/agents/main', 'ai/chats', 'ai/prompts/partials'];
         let displayMessage = false;
 
         for (const dir of directories) {
@@ -31,6 +31,23 @@ export class ProjectService {
                 fs.mkdirSync(dirPath, { recursive: true });
                 console.log(ux.colorize('green', `Created directory: ${dirPath}`));
                 displayMessage = true;
+            }
+
+            // create .gitkeep file if it doesn't exist
+            if(['ai/tools', 'ai/prompts/agents', 'ai/prompts/partials'].includes(dir)){
+                const gitKeepFilePath = `${dirPath}/.gitkeep`;
+                if (!fs.existsSync(gitKeepFilePath)) {
+                    fs.writeFileSync(gitKeepFilePath, '');
+                }
+            }
+
+            //create main agent file if it doesn't exist
+            if(['ai/prompts/agents/main'].includes(dir)){
+                const mainAgentFilePath = `${dirPath}/main.md.liquid`;
+                if (!fs.existsSync(mainAgentFilePath)) {
+                    const defaultContent = `---\nname: main\nmodel: gpt-4-turbo-preview\n---\nYou are an agent that helps the user with his request.`
+                    fs.writeFileSync(mainAgentFilePath, defaultContent);
+                }
             }
         }
 

@@ -4,8 +4,6 @@ import * as path from 'node:path';
 import {Service} from "typedi";
 
 import {Task} from "../model/task";
-import {AgentService} from "./agent-service";
-import {ChatExecutionService} from "./chat-execution-service";
 import {Chat} from "../model";
 
 // eslint-disable-next-line new-cap
@@ -14,12 +12,6 @@ export class TaskService {
     private lastTaskId: number = 0;
     // Assuming tasks are stored in-memory for this example, but this could be adapted to use a database
     private tasks: Task[] = [];
-
-    // eslint-disable-next-line no-useless-constructor
-    constructor(
-        private agentsService: AgentService,
-        private chatExecutionService: ChatExecutionService
-    ) {}
 
     parseCallAndStartTaskExecution(taskCall: string, parentChatFile:string): Task | null {
         // Preprocessing step to remove the "```task\n" and "```" start and end strings if they are present
