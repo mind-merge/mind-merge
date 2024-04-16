@@ -85,7 +85,8 @@
     "prepare": "yarn build",
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "test-cucumber": "./node_modules/.bin/cucumber-js -p default",
-    "version": "oclif readme && git add README.md"
+    "version": "oclif readme && git add README.md",
+    "start": "node ./bin/dev.js start"
   },
   "version": "0.0.1",
   "bugs": "https://github.com/mincua/mind-merge/issues",

@@ -108,7 +108,7 @@ export default class Start extends Command {
       // Project is using Yarn or npm
       const isYarn = fs.existsSync(`${projectDir}/yarn.lock`);
       if (isYarn) {
-        // await this.installWithYarn();  
+        await this.installWithYarn();  
       } else {
         await this.installWithNpm();
       }
