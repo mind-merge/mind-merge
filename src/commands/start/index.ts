@@ -1,11 +1,11 @@
 import {Command, Flags, ux} from '@oclif/core'
+import {execSync} from 'node:child_process';
+import * as fs from 'node:fs';
 import 'reflect-metadata';
 import {Container} from "typedi";
-const fs = require('fs');
-import {execSync} from 'node:child_process';
 
-import {ProjectService} from "../../services/project-service";
 import {GlobalFlagsService} from "../../services/global-flags-service";
+import {ProjectService} from "../../services/project-service";
 
 export default class Start extends Command {
   static args = {}
@@ -34,22 +34,6 @@ export default class Start extends Command {
     }),
   }
 
-  async installWithYarn() {
-    try {
-      execSync('yarn add mind-merge-ai', { stdio: 'inherit' });
-    } catch (error) {
-      console.error('Failed to install mind-merge-ai package with Yarn.');
-    }
-  }
-
-  async installWithNpm() {
-    try {
-      execSync('npm install mind-merge-ai', { stdio: 'inherit' });
-    } catch (error) {
-      console.error('Failed to install mind-merge-ai package with npm.');
-    }
-  }
-
   async handleInitWithoutPackageJson() {
     console.log('This project needs to be initialized with Yarn or npm.');
 
@@ -67,12 +51,19 @@ export default class Start extends Command {
     }
   }
 
-  async isYarnInstalled() {
+  async installWithNpm() {
     try {
-      execSync('yarn --version');
-      return true;
-    } catch (error) {
-      return false;
+      execSync('npm install mind-merge-ai', { stdio: 'inherit' });
+    } catch {
+      console.error('Failed to install mind-merge-ai package with npm.');
+    }
+  }
+
+  async installWithYarn() {
+    try {
+      execSync('yarn add mind-merge-ai', { stdio: 'inherit' });
+    } catch {
+      console.error('Failed to install mind-merge-ai package with Yarn.');
     }
   }
 
@@ -80,7 +71,16 @@ export default class Start extends Command {
     try {
       execSync('npm --version');
       return true;
-    } catch (error) {
+    } catch {
+      return false;
+    }
+  }
+
+  async isYarnInstalled() {
+    try {
+      execSync('yarn --version');
+      return true;
+    } catch {
       return false;
     }
   }
@@ -108,7 +108,7 @@ export default class Start extends Command {
       // Project is using Yarn or npm
       const isYarn = fs.existsSync(`${projectDir}/yarn.lock`);
       if (isYarn) {
-        await this.installWithYarn();  
+        await this.installWithYarn();
       } else {
         await this.installWithNpm();
       }
