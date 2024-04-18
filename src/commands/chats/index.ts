@@ -75,6 +75,7 @@ export class NewCommand extends Command {
         return `---
 createdAt: ${new Date().toISOString()}
 agent: ${agentName}
+fileReferences:
 ---
 # User
 `;

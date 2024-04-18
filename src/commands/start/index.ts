@@ -34,36 +34,54 @@ export default class Start extends Command {
     }),
   }
 
-  async handleInitWithoutPackageJson() {
-    console.log('This project needs to be initialized with Yarn or npm.');
+  async handleInitWithoutPackageJson(packageName: string) {
+    //This project needs to be initialized with Yarn or npm.
 
     // Check if Yarn is installed
     if (await this.isYarnInstalled()) {
-      console.log('Running yarn init...');
+      ux.log('Running yarn init...');
       execSync('yarn init', { stdio: 'inherit' });
-      this.installWithYarn();
+      await this.installWithYarn(packageName);
     } else if (await this.isNpmInstalled()) {
-      console.log('Running npm init...');
+      ux.log('Running npm init...');
       execSync('npm init', { stdio: 'inherit' });
-      this.installWithNpm();
+      await this.installWithNpm(packageName);
     } else {
       console.error('Neither Yarn nor npm is installed. Please install one of them.');
     }
   }
 
-  async installWithNpm() {
+  async installWithNpm(packageName: string) {
     try {
-      execSync('npm install mind-merge-ai', { stdio: 'inherit' });
+      execSync(`npm install ${packageName}`, { stdio: 'inherit' });
     } catch {
       console.error('Failed to install mind-merge-ai package with npm.');
     }
   }
 
-  async installWithYarn() {
+  async installWithYarn(packageName: string) {
     try {
-      execSync('yarn add mind-merge-ai', { stdio: 'inherit' });
+      execSync(`yarn add ${packageName}`, { stdio: 'inherit' });
     } catch {
       console.error('Failed to install mind-merge-ai package with Yarn.');
+    }
+  }
+
+  async installYarnDependencies() {
+    try {
+      await execSync('yarn install');
+      ux.log('Dependencies installed successfully.');
+    } catch (error) {
+      console.error(`Error installing dependencies: ${error}`);
+    }
+  }
+
+  async installNpmDependencies() {
+    try {
+      await execSync('npm install');
+      ux.log('Dependencies installed successfully.');
+    } catch (error) {
+      console.error(`Error installing dependencies: ${error}`);
     }
   }
 
@@ -86,7 +104,7 @@ export default class Start extends Command {
   }
 
   async run(): Promise<void> {
-    const {args, flags} = await this.parse(Start)
+    const { flags } = await this.parse(Start);
 
     const projectService = Container.get(ProjectService);
     const globalFlagsService = Container.get(GlobalFlagsService);
@@ -103,15 +121,25 @@ export default class Start extends Command {
 
     const projectDir = process.cwd();
     ux.log("Project dir: ", ux.colorize('bgWhite', ux.colorize('blue', projectDir)));
-    const packageJsonPath = `${projectDir}/package.json`;
 
-    if (fs.existsSync(packageJsonPath)) {
-      // Project is using Yarn or npm
-      const isYarn = fs.existsSync(`${projectDir}/yarn.lock`);
-      await (isYarn ? this.installWithYarn() : this.installWithNpm());
+    const packageName = 'mind-merge-ai';
+    if (fs.existsSync(`${projectDir}/package.json`)) {
+      const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+      let isYarn = fs.existsSync(`${projectDir}/yarn.lock`);;
+      if (packageJson.dependencies && packageJson.dependencies[packageName]) {
+        if (!fs.existsSync('node_modules')) {
+          ux.log('node_modules directory does not exist. Installing dependencies...');
+          // Project is using Yarn or npm
+          await (isYarn ? this.installYarnDependencies() : this.installNpmDependencies());
+        }
+      } else {
+        // Package is not listed in package.json, install it
+        ux.log(`Installing ${packageName}...`);
+        await (isYarn ? this.installWithYarn(packageName) : this.installWithNpm(packageName));
+      }
     } else {
       // Project doesn't have a package.json file
-      await this.handleInitWithoutPackageJson();
+      await this.handleInitWithoutPackageJson(packageName);
     }
 
     await projectService.initialize();
