@@ -1,6 +1,6 @@
 import { Service } from "typedi";
 
-import { OpenAIModel } from '../model';
+import { GeminiModel, OpenAIModel  } from '../model';
 import {IModel} from "../model/model";
 
 @Service()
@@ -27,6 +27,11 @@ export class ModelService {
 
                 case 'gpt-3.5-turbo': {
                     this.models.set(modelName, new OpenAIModel(modelName, 16_385));
+                    break;
+                }
+
+                case 'gemini-pro':{
+                    this.models.set(modelName, new GeminiModel(modelName));
                     break;
                 }
 

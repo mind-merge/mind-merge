@@ -4,6 +4,7 @@
     "mm": "./bin/run.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.7.1",
     "@oclif/core": "^3",
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-plugins": "^4",

@@ -1,6 +1,7 @@
 export enum Role {
     ASSISTANT = "assistant",
     FUNCTION = "function",
+    Model = "model",
     SYSTEM = "system",
     TOOL = "tool",
     USER = "user",

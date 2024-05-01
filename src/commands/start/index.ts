@@ -35,7 +35,7 @@ export default class Start extends Command {
   }
 
   async handleInitWithoutPackageJson(packageName: string) {
-    //This project needs to be initialized with Yarn or npm.
+    // This project needs to be initialized with Yarn or npm.
 
     // Check if Yarn is installed
     if (await this.isYarnInstalled()) {
@@ -67,18 +67,18 @@ export default class Start extends Command {
     }
   }
 
-  async installYarnDependencies() {
+  async installNpmDependencies() {
     try {
-      await execSync('yarn install');
+      await execSync('npm install');
       ux.log('Dependencies installed successfully.');
     } catch (error) {
       console.error(`Error installing dependencies: ${error}`);
     }
   }
 
-  async installNpmDependencies() {
+  async installYarnDependencies() {
     try {
-      await execSync('npm install');
+      await execSync('yarn install');
       ux.log('Dependencies installed successfully.');
     } catch (error) {
       console.error(`Error installing dependencies: ${error}`);
@@ -121,11 +121,12 @@ export default class Start extends Command {
 
     const projectDir = process.cwd();
     ux.log("Project dir: ", ux.colorize('bgWhite', ux.colorize('blue', projectDir)));
-
     const packageName = 'mind-merge-ai';
+    
     if (fs.existsSync(`${projectDir}/package.json`)) {
       const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-      let isYarn = fs.existsSync(`${projectDir}/yarn.lock`);;
+      const isYarn = fs.existsSync(`${projectDir}/yarn.lock`);
+
       if (packageJson.dependencies && packageJson.dependencies[packageName]) {
         if (!fs.existsSync('node_modules')) {
           ux.log('node_modules directory does not exist. Installing dependencies...');
