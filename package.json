@@ -15,6 +15,7 @@
     "dotenv": "^16.4.5",
     "gpt-tokenizer": "^2.1.2",
     "gray-matter": "^4.0.3",
+    "groq-sdk": "^0.3.3",
     "js-yaml": "^4.1.0",
     "liquidjs": "^10.10.0",
     "lodash": "^4.17.21",

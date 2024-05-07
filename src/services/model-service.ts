@@ -1,6 +1,6 @@
 import { Service } from "typedi";
 
-import { GeminiModel, OpenAIModel, ClaudeModel } from '../model';
+import { GeminiModel, OpenAIModel, ClaudeModel, GroqModel } from '../model';
 import {IModel} from "../model/model";
 
 @Service()
@@ -37,6 +37,11 @@ export class ModelService {
 
                 case 'claude-3-opus-20240229':{
                     this.models.set(modelName, new ClaudeModel(modelName));
+                    break;
+                }
+
+                case 'mixtral-8x7b-32768':{
+                    this.models.set(modelName, new GroqModel(modelName));
                     break;
                 }
 
