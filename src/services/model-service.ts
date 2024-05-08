@@ -34,6 +34,11 @@ export class ModelService {
                     break;
                 }
 
+                case 'gemini-1.5-pro-latest':{
+                    this.models.set(modelName, new GeminiModel(modelName));
+                    break;
+                }
+
                 case 'claude-3-opus-20240229':{
                     this.models.set(modelName, new ClaudeModel(modelName));
                     break;
