@@ -2,8 +2,7 @@ import {ux} from "@oclif/core";
 import * as fs from 'node:fs';
 import {Service} from "typedi";
 
-import {Agent, Chat, Message, Role} from '../model';
-import {Task} from "../model/task";
+import {Agent, Chat, Message, Role, AsyncIterableChunk, Task} from '../model';
 import {ChatParserService} from "./chat-parser-service";
 import {EditorInteractionService} from "./editor-interaction-service";
 import {GlobalFlagsService} from "./global-flags-service";
@@ -18,13 +17,6 @@ interface ChatProcessingOutput {
     output: string;
     tasksCreated: Array<Task>;
     toolsCalled: Array<ToolCall>;
-}
-
-type AsyncIterableChunk = AsyncIterable<Chunk> | Chunk[];
-interface Chunk {
-    choices?: { delta?: { content?: string } }[]; // For OpenAI
-    delta?: {text?: string};  // For Claude
-    text: () => string; // For Gemini
 }
 
 // eslint-disable-next-line new-cap
@@ -60,66 +52,6 @@ export class ChatExecutionService {
         const data: Message[] = [new Message(Role.SYSTEM, systemPrompt, new Date()), ...chat.messages];
         return data;
     }
-
-    /* async  processChatCompletionRequestOutput(chat:Chat, data: Iterable<Chunk>, filePath: string):Promise<ChatProcessingOutput> {
-        let output:string = '';
-        let toolBufferPart:string = '';
-        let taskBufferPart:string = '';
-        let taskOutputBufferPart:string = '';
-        const pendingToolCalls: Array<PendingToolCall> = [];
-        const tasksCreated: Array<Task> = [];
-        fs.appendFileSync(filePath, '# Agent\n\n');
-        for await (const chunk of data) {
-            for (const choice of chunk.choices) {
-                if (choice.delta && choice.delta.content) {
-                    const deltaContent = choice.delta.content;
-                    fs.appendFileSync(filePath, deltaContent);
-                    process.stdout.write(deltaContent.toString());
-                    output += deltaContent.toString();
-                    toolBufferPart += deltaContent.toString();
-                    taskBufferPart += deltaContent.toString();
-                    taskOutputBufferPart += deltaContent.toString();
-                    // check for start and end of tool call tags
-
-                    const toolCallMatch = toolBufferPart.match(/```tool\n([\S\s]*?)\n```/im);
-                    if (toolCallMatch) {
-                        const toolCall = toolCallMatch[0];
-                        const tool = this.toolsService.parseCallAndStartToolExecution(toolCall);
-                        pendingToolCalls.push(tool);
-                        toolBufferPart = '';
-                    }
-
-                    const taskCallMatch = taskBufferPart.match(/```task\n([\S\s]*?)\n```/im);
-                    if (taskCallMatch) {
-                        const taskCall = taskCallMatch[0];
-                        const task = this.taskService.parseCallAndStartTaskExecution(taskCall, filePath);
-
-                        if (task)
-                            tasksCreated.push(task);
-                        else
-                            ux.logToStderr(ux.colorize('red', `Task parsing failed for task call: ${taskCall}`))
-                        taskBufferPart = '';
-                    }
-
-                    const taskOutputMatch = taskOutputBufferPart.match(/```task-output\n([\S\s]*?)\n```/im);
-                    if (taskOutputMatch) {
-                        taskOutputBufferPart = '';
-                        const taskOutput = taskOutputMatch[0];
-
-                        this.taskService.parseTaskOutputBlock(chat, taskOutput);
-                    }
-                }
-            }
-        }
-
-        const ret:ChatProcessingOutput = { output, tasksCreated, toolsCalled: [] };
-
-        if (pendingToolCalls.length > 0) {
-            ret.toolsCalled = await this.toolsService.processTools(pendingToolCalls, filePath);
-        }
-
-        return ret;
-    } */
 
     async processChatCompletionRequestOutput(chat: Chat, data: AsyncIterableChunk, filePath: string): Promise<ChatProcessingOutput> {
         let output: string = '';

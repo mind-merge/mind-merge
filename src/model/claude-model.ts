@@ -2,10 +2,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { appConstant } from "../constants";
 import { MessageParam } from '@anthropic-ai/sdk/resources';
 import { MessageStream } from '@anthropic-ai/sdk/lib/MessageStream';
-import { Message, Role } from './index';
-import { IModel } from './model';
+import { Message, Role, IModel } from './index';
 
-const client = new Anthropic({ apiKey: appConstant.CLAUDE_API_KEY });
+let client: Anthropic | null = null;
 
 export class ClaudeModel implements IModel {
 
@@ -13,7 +12,13 @@ export class ClaudeModel implements IModel {
     constructor(
         private modelName: string,
         private maxOutputTokens: number = 1024
-    ) { }
+    ) {
+        if (!appConstant.CLAUDE_API_KEY) {
+            console.error('Claude api key is not set.');
+            return;
+        }
+        client = new Anthropic({ apiKey: appConstant.CLAUDE_API_KEY });
+    }
 
     async chatRequestFormat(messages: Message[]) {
         const msgHistory: Message[] = [];
@@ -35,7 +40,7 @@ export class ClaudeModel implements IModel {
         if (messages.length === 0) throw new Error('The request must contain at least one message');
         try {
             const { message, msgHistory } = await this.chatRequestFormat(messages);
-            return client.messages.stream({
+            return client!.messages.stream({
                 system: message,
                 messages: msgHistory.map((message) => ({
                     content: message.content,

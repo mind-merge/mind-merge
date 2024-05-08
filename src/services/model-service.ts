@@ -1,7 +1,6 @@
 import { Service } from "typedi";
 
-import { GeminiModel, OpenAIModel, ClaudeModel, GroqModel } from '../model';
-import {IModel} from "../model/model";
+import { GeminiModel, OpenAIModel, ClaudeModel, GroqModel, IModel } from '../model';
 
 @Service()
 export class ModelService {

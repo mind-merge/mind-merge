@@ -4,12 +4,9 @@ import OpenAI from 'openai';
 import {ChatCompletionChunk, ChatCompletionMessageParam} from "openai/resources";
 import {Stream} from "openai/streaming";
 import {appConstant} from "../constants";
-import { Message } from "./index";
-import {IModel} from "./model";
+import { Message, IModel } from "./index";
 
-const openAI = new OpenAI({
-    apiKey: appConstant.OPENAI_API_KEY
-});
+let openAI: OpenAI | null = null;
 
 export class OpenAIModel implements IModel {
 
@@ -18,12 +15,18 @@ export class OpenAIModel implements IModel {
         private modelName: string,
         private maxInputTokens: number = 4096,
         private maxOutputTokens: number = 4096
-    ) { }
+    ) { 
+        if (!appConstant.OPENAI_API_KEY) {
+            console.error('OpenAi api key is not set.');
+            return;
+        }
+        openAI = new OpenAI({ apiKey: appConstant.OPENAI_API_KEY });
+    }
 
     async completeChatRequest(messages: Message[]): Promise<Stream<ChatCompletionChunk>> {
         if(messages.length === 0) throw new Error('The request must contain at least one message');
 
-        return openAI.chat.completions.create({
+        return openAI!.chat.completions.create({
             max_tokens: this.maxOutputTokens,
             messages: messages.map((message) => ({
                 content: message.content,

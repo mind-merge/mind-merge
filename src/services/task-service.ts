@@ -3,8 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Service} from "typedi";
 
-import {Task} from "../model/task";
-import {Chat} from "../model";
+import {Chat, Task} from "../model";
 
 // eslint-disable-next-line new-cap
 @Service()

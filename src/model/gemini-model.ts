@@ -1,18 +1,22 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { appConstant } from "../constants";
-import { Message, Role } from './index';
-import { IModel } from './model';
+import { Message, Role, IModel } from './index';
 
-const genAI = new GoogleGenerativeAI(appConstant.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });    // use static model here for now
-
+let model: GenerativeModel | null = null;
 
 export class GeminiModel implements IModel {
 
     // eslint-disable-next-line no-useless-constructor
     constructor(
         private modelName: string,
-    ) { }
+    ) {
+        if (!appConstant.GEMINI_API_KEY) {
+            console.error('Gemini api key is not set.');
+            return;
+        }
+        const genAI = new GoogleGenerativeAI(appConstant.GEMINI_API_KEY || '');
+        model = genAI.getGenerativeModel({ model: this.modelName });
+    }
 
     async chatRequestFormat(messages: Message[]) {
         let prevRole = Role.USER;
@@ -40,7 +44,7 @@ export class GeminiModel implements IModel {
     async completeChatRequest(messages: Message[]) {
         try {
             const { message, msgHistory } = await this.chatRequestFormat(messages);
-            const chat = model.startChat({
+            const chat = model!.startChat({
                 history: msgHistory.map(message => ({
                     parts: [{ text: message.content }],
                     role: message.role,
