@@ -1,12 +1,8 @@
 import {ux} from "@oclif/core";
 import * as fs from 'node:fs';
-import {ChatCompletionChunk} from "openai/resources";
-import {Stream} from "openai/streaming";
 import {Service} from "typedi";
 
-import {Agent, Chat, Message, Role} from '../model';
-import {ChatCompletionRequest} from "../model/model";
-import {Task} from "../model/task";
+import {Agent, Chat, Message, Role, AsyncIterableChunk, Task, Provider} from '../model';
 import {ChatParserService} from "./chat-parser-service";
 import {EditorInteractionService} from "./editor-interaction-service";
 import {GlobalFlagsService} from "./global-flags-service";
@@ -40,10 +36,9 @@ export class ChatExecutionService {
         private editorInteractionService: EditorInteractionService
     ) { }
 
-    async generateChatCompletionRequest(chat:Chat): Promise<ChatCompletionRequest> {
+    async generateChatCompletionRequest(chat:Chat): Promise<Message[]> {
         // Check if agent format is liquid or md
-        let tools = this.toolsService.getAllGlobalTools();
-        tools=[...tools, ...this.toolsService.getAgentTools(chat.agent.name)];
+        let tools = [...this.toolsService.getAllGlobalTools(), ...this.toolsService.getAgentTools(chat.agent.name)];
 
         const templateData = {
             chatFile: chat.fileName,
@@ -54,65 +49,56 @@ export class ChatExecutionService {
         const rendered = await this.templateService.parseTemplateFileAsync(chat.agent.fileName, templateData);
         const systemPrompt = matter(rendered).content;
 
-        const data: Message[] = [];
-        data.push(new Message(Role.SYSTEM, systemPrompt, new Date()));
-        for (const message of chat.messages) {
-            data.push(message);
-        }
-
-        return {
-            messages: data
-        } as ChatCompletionRequest;
+        const data: Message[] = [new Message(Role.SYSTEM, systemPrompt, new Date()), ...chat.messages];
+        return data;
     }
 
-    async  processChatCompletionRequestOutput(chat:Chat, data: Stream<ChatCompletionChunk>, filePath: string):Promise<ChatProcessingOutput> {
-        let output:string = '';
-        let toolBufferPart:string = '';
-        let taskBufferPart:string = '';
-        let taskOutputBufferPart:string = '';
+    async processChatCompletionRequestOutput(chat: Chat, data: AsyncIterableChunk, filePath: string): Promise<ChatProcessingOutput> {
+        let output: string = '';
+        let toolBufferPart: string = '';
+        let taskBufferPart: string = '';
+        let taskOutputBufferPart: string = '';
         const pendingToolCalls: Array<PendingToolCall> = [];
         const tasksCreated: Array<Task> = [];
         fs.appendFileSync(filePath, '# Agent\n\n');
+        
         for await (const chunk of data) {
-            for (const choice of chunk.choices) {
-                if (choice.delta && choice.delta.content) {
-                    const deltaContent = choice.delta.content;
-                    fs.appendFileSync(filePath, deltaContent);
-                    process.stdout.write(deltaContent.toString());
-                    output += deltaContent.toString();
-                    toolBufferPart += deltaContent.toString();
-                    taskBufferPart += deltaContent.toString();
-                    taskOutputBufferPart += deltaContent.toString();
-                    // check for start and end of tool call tags
+            let deltaContent = chunk?.choices?.[0]?.delta?.content || chunk?.delta?.text || chunk?.text?.();
+            if (!deltaContent) continue;
 
-                    const toolCallMatch = toolBufferPart.match(/```tool\n([\S\s]*?)\n```/im);
-                    if (toolCallMatch) {
-                        const toolCall = toolCallMatch[0];
-                        const tool = this.toolsService.parseCallAndStartToolExecution(toolCall);
-                        pendingToolCalls.push(tool);
-                        toolBufferPart = '';
-                    }
+            fs.appendFileSync(filePath, deltaContent);
+            process.stdout.write(deltaContent.toString());
+            output += deltaContent.toString();
+            toolBufferPart += deltaContent.toString();
+            taskBufferPart += deltaContent.toString();
+            taskOutputBufferPart += deltaContent.toString();
+            // check for start and end of tool call tags
 
-                    const taskCallMatch = taskBufferPart.match(/```task\n([\S\s]*?)\n```/im);
-                    if (taskCallMatch) {
-                        const taskCall = taskCallMatch[0];
-                        const task = this.taskService.parseCallAndStartTaskExecution(taskCall, filePath);
+            const toolCallMatch = toolBufferPart.match(/```tool\n([\S\s]*?)\n```/im);
+            if (toolCallMatch) {
+                const toolCall = toolCallMatch[0];
+                const tool = this.toolsService.parseCallAndStartToolExecution(toolCall);
+                pendingToolCalls.push(tool);
+                toolBufferPart = '';
+            }
 
-                        if (task)
-                            tasksCreated.push(task);
-                        else
-                            ux.logToStderr(ux.colorize('red', `Task parsing failed for task call: ${taskCall}`))
-                        taskBufferPart = '';
-                    }
+            const taskCallMatch = taskBufferPart.match(/```task\n([\S\s]*?)\n```/im);
+            if (taskCallMatch) {
+                const taskCall = taskCallMatch[0];
+                const task = this.taskService.parseCallAndStartTaskExecution(taskCall, filePath);
 
-                    const taskOutputMatch = taskOutputBufferPart.match(/```task-output\n([\S\s]*?)\n```/im);
-                    if (taskOutputMatch) {
-                        taskOutputBufferPart = '';
-                        const taskOutput = taskOutputMatch[0];
+                if (task)
+                    tasksCreated.push(task);
+                else
+                    ux.logToStderr(ux.colorize('red', `Task parsing failed for task call: ${taskCall}`))
+                taskBufferPart = '';
+            }
 
-                        this.taskService.parseTaskOutputBlock(chat, taskOutput);
-                    }
-                }
+            const taskOutputMatch = taskOutputBufferPart.match(/```task-output\n([\S\s]*?)\n```/im);
+            if (taskOutputMatch) {
+                taskOutputBufferPart = '';
+                const taskOutput = taskOutputMatch[0];
+                this.taskService.parseTaskOutputBlock(chat, taskOutput);
             }
         }
 
@@ -138,12 +124,12 @@ export class ChatExecutionService {
         }
 
         const chat: Chat|undefined = await this.chatParserService.parseChatFile(filePath);
-        const agent = chat ? chat.agent : null;
         if (!chat) {
             ux.logToStderr(ux.colorize('red', `Chat file ${filePath} could not be parsed.`));
             return;
         }
-
+        
+        const agent = chat ? chat.agent : null;
         if (!agent) {
             ux.logToStderr(ux.colorize('red', `Agent ${chat.agent.name} not found, chat could not be loaded`));
             return;
@@ -155,7 +141,7 @@ export class ChatExecutionService {
             let toolCalls = 0;
 
             let request = await this.generateChatCompletionRequest(chat);
-            let apiData = await this.executeChatCompletionRequest(agent, request);
+            let apiData = await this.executeChatCompletionRequest(agent, request) as AsyncIterableChunk;
             let output = await this.processChatCompletionRequestOutput(chat, apiData, filePath);
 
             // First we handle tool calls
@@ -168,7 +154,7 @@ export class ChatExecutionService {
                 // eslint-disable-next-line no-await-in-loop
                 request = await this.generateChatCompletionRequest(chat);
                 // eslint-disable-next-line no-await-in-loop
-                apiData = await this.executeChatCompletionRequest(agent, request);
+                apiData = await this.executeChatCompletionRequest(agent, request) as AsyncIterableChunk;
                 // eslint-disable-next-line no-await-in-loop
                 output = await this.processChatCompletionRequestOutput(chat, apiData, filePath);
                 toolCalls++;
@@ -180,16 +166,11 @@ export class ChatExecutionService {
         } catch (error) {
             console.error(error);
         }
-
         this.processingFiles.delete(filePath);
     }
 
-    private async executeChatCompletionRequest(agent: Agent, request: ChatCompletionRequest) {
-        const model = await this.modelService.getModel(agent.model ?? 'gpt-4-preview');
+    private async executeChatCompletionRequest(agent: Agent, request: Message[])  {
+        const model = await this.modelService.getModel(agent.provider ?? Provider.OpenAI, agent.model ?? 'gpt-4-preview');
         return model.completeChatRequest(request);
     }
-
-
-
-
 }

@@ -1,18 +1,12 @@
 // import {encodeChat, isWithinTokenLimit} from "gpt-tokenizer";
-// import {ChatMessage} from "gpt-tokenizer/esm/GptEncoding";
 // eslint-disable-next-line import/no-named-as-default
 import OpenAI from 'openai';
-import {Chat, ChatCompletionChunk, ChatCompletionMessageParam} from "openai/resources";
+import {ChatCompletionChunk, ChatCompletionMessageParam} from "openai/resources";
 import {Stream} from "openai/streaming";
-
 import {appConstant} from "../constants";
-import {ChatCompletionRequest, IModel} from "./model";
+import { Message, IModel } from "./index";
 
-import ChatCompletionCreateParamsStreaming = Chat.ChatCompletionCreateParamsStreaming;
-
-const openAI = new OpenAI({
-    apiKey: appConstant.OPENAI_API_KEY
-});
+let openAI: OpenAI | null = null;
 
 export class OpenAIModel implements IModel {
 
@@ -21,29 +15,26 @@ export class OpenAIModel implements IModel {
         private modelName: string,
         private maxInputTokens: number = 4096,
         private maxOutputTokens: number = 4096
-    ) {
+    ) { 
+        if (!appConstant.OPENAI_API_KEY) {
+            console.error('OpenAi api key is not set.');
+            return;
+        }
+        openAI = new OpenAI({ apiKey: appConstant.OPENAI_API_KEY });
     }
 
-    async completeChatRequest(request:ChatCompletionRequest): Promise<Stream<ChatCompletionChunk>> {
-        if (request.messages.length === 0) {
-            throw new Error('The request must contain at least one message');
-        }
+    async completeChatRequest(messages: Message[]): Promise<Stream<ChatCompletionChunk>> {
+        if(messages.length === 0) throw new Error('The request must contain at least one message');
 
-        const openAIRequest: ChatCompletionCreateParamsStreaming = {
-            ...request,
-            // eslint-disable-next-line camelcase
+        return openAI!.chat.completions.create({
             max_tokens: this.maxOutputTokens,
-            messages: request.messages.map((message) => ({
-                    content: message.content,
-                    role: message.role
-                } as ChatCompletionMessageParam)),
+            messages: messages.map((message) => ({
+                content: message.content,
+                role: message.role
+            } as ChatCompletionMessageParam)),
             model: this.modelName,
-            stream: true
-            
-        };
-
-        // noinspection TypeScriptValidateJSTypes
-        return openAI.chat.completions.create(openAIRequest);
+            stream: true,
+        });
     }
 
     // Calculate the total tokens for the chat request using gpt-tokenizer

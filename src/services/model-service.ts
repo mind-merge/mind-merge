@@ -1,41 +1,40 @@
 import { Service } from "typedi";
 
-import { OpenAIModel } from '../model';
-import {IModel} from "../model/model";
+import { GeminiModel, OpenAIModel, ClaudeModel, GroqModel, IModel, Provider } from '../model';
 
 @Service()
 export class ModelService {
     private models: Map<string, IModel> = new Map();
 
-    async getModel(modelName: string):Promise<IModel> {
+    async getModel(provider: Provider, modelName: string): Promise<IModel> {
         if (!this.models.get(modelName)) {
-            switch (modelName) {
-                case 'gpt4': {
-                    this.models.set(modelName, new OpenAIModel(modelName, 8192));
+
+            switch (provider) {
+                case Provider.OpenAI: {
+                    this.models.set(modelName, new OpenAIModel(modelName));
                     break;
                 }
 
-                case 'gpt4-preview': {
-                    this.models.set(modelName, new OpenAIModel(modelName, 128_000));
+                case Provider.Google: {
+                    this.models.set(modelName, new GeminiModel(modelName));
                     break;
                 }
 
-                case 'gpt-4-turbo-preview': {
-                    this.models.set(modelName, new OpenAIModel(modelName, 128_000));
+                case Provider.Anthropic: {
+                    this.models.set(modelName, new ClaudeModel(modelName));
                     break;
                 }
 
-                case 'gpt-3.5-turbo': {
-                    this.models.set(modelName, new OpenAIModel(modelName, 16_385));
+                case Provider.Groq: {
+                    this.models.set(modelName, new GroqModel(modelName));
                     break;
                 }
 
                 default: {
-                    throw new Error('Unsupported model name');
+                    throw new Error('Unsupported provider name');
                 }
             }
         }
-        
         return this.models.get(modelName) as IModel;
     }
 }

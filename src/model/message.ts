@@ -1,6 +1,7 @@
 export enum Role {
     ASSISTANT = "assistant",
     FUNCTION = "function",
+    Model = "model",  //gemini
     SYSTEM = "system",
     TOOL = "tool",
     USER = "user",
