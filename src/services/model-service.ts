@@ -1,31 +1,31 @@
 import { Service } from "typedi";
 
-import { GeminiModel, OpenAIModel, ClaudeModel, GroqModel, IModel } from '../model';
+import { GeminiModel, OpenAIModel, ClaudeModel, GroqModel, IModel, Provider } from '../model';
 
 @Service()
 export class ModelService {
     private models: Map<string, IModel> = new Map();
 
-    async getModel(provider: string, modelName: string): Promise<IModel> {
+    async getModel(provider: Provider, modelName: string): Promise<IModel> {
         if (!this.models.get(modelName)) {
 
             switch (provider) {
-                case 'openai': {
+                case Provider.OpenAI: {
                     this.models.set(modelName, new OpenAIModel(modelName));
                     break;
                 }
 
-                case 'google': {
+                case Provider.Google: {
                     this.models.set(modelName, new GeminiModel(modelName));
                     break;
                 }
 
-                case 'anthropic': {
+                case Provider.Anthropic: {
                     this.models.set(modelName, new ClaudeModel(modelName));
                     break;
                 }
 
-                case 'groq': {
+                case Provider.Groq: {
                     this.models.set(modelName, new GroqModel(modelName));
                     break;
                 }

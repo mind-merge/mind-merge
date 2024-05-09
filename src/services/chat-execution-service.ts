@@ -2,7 +2,7 @@ import {ux} from "@oclif/core";
 import * as fs from 'node:fs';
 import {Service} from "typedi";
 
-import {Agent, Chat, Message, Role, AsyncIterableChunk, Task} from '../model';
+import {Agent, Chat, Message, Role, AsyncIterableChunk, Task, Provider} from '../model';
 import {ChatParserService} from "./chat-parser-service";
 import {EditorInteractionService} from "./editor-interaction-service";
 import {GlobalFlagsService} from "./global-flags-service";
@@ -170,7 +170,7 @@ export class ChatExecutionService {
     }
 
     private async executeChatCompletionRequest(agent: Agent, request: Message[])  {
-        const model = await this.modelService.getModel(agent.provider ?? 'openai', agent.model ?? 'gpt-4-preview');
+        const model = await this.modelService.getModel(agent.provider ?? Provider.OpenAI, agent.model ?? 'gpt-4-preview');
         return model.completeChatRequest(request);
     }
 }

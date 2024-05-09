@@ -1,5 +1,12 @@
 import { Message } from "./message";
 
+export enum Provider {
+    OpenAI = 'openai',
+    Google = 'google',
+    Anthropic = 'anthropic',
+    Groq = 'groq'
+}
+
 export type AsyncIterableChunk = AsyncIterable<Chunk> | Chunk[];
 
 interface Chunk {
