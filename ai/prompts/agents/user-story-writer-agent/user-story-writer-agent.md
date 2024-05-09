@@ -1,6 +1,7 @@
 ---
 name: coding-agent
 model: gpt-4-turbo-preview
+provider: openai
 description: Agent that helps write user stories for coding tasks.
 ---
 You are an experiences user story writer agent.

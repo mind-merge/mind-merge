@@ -170,7 +170,7 @@ export class ChatExecutionService {
     }
 
     private async executeChatCompletionRequest(agent: Agent, request: Message[])  {
-        const model = await this.modelService.getModel(agent.model ?? 'gpt-4-preview');
+        const model = await this.modelService.getModel(agent.provider ?? 'openai', agent.model ?? 'gpt-4-preview');
         return model.completeChatRequest(request);
     }
 }

@@ -71,6 +71,7 @@ export class AgentService {
             parsedContent.data.description,
             parsedContent.content,
             parsedContent.data.model,
+            parsedContent.data.provider,
             parsedContent.data.inputData,
             parsedContent.data.outputData
         );
