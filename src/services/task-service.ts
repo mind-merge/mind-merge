@@ -8,7 +8,6 @@ import {Chat, Task} from "../model";
 // eslint-disable-next-line new-cap
 @Service()
 export class TaskService {
-    private lastTaskId: number = 0;
     // Assuming tasks are stored in-memory for this example, but this could be adapted to use a database
     private tasks: Task[] = [];
 
@@ -46,9 +45,18 @@ export class TaskService {
 
         // Determine the parent directory based on the agent's name
         // This might need adjustments based on your application's directory structure
-        const parentChatDir = path.dirname(parentChatFile)
-
-        const id = this.lastTaskId++;
+        const parentChatDir = path.dirname(parentChatFile);
+        const taskDir = path.join(parentChatDir, 'tasks');
+        let id: number = 0;
+        if (fs.existsSync(taskDir)) {
+            const files = fs.readdirSync(taskDir);
+            files.forEach(file => {
+                const match = file.match(/(\d+)-/); // Matching the first numeric group which represents the ID
+                if (match && match[1]) {
+                    id = parseInt(match[1], 10) + 1;
+                }
+            });
+        }
         // Generate file path for the task chat
         const chatFilePath = this.generateChatFilePath(parentChatDir, id, title, agentName);
 
@@ -77,7 +85,11 @@ export class TaskService {
     private generateChatFilePath(parentChatDir:string, id:number, title: string, agentName: string): string {
         // Implementation details to generate unique file path for chat goes here
         const sanitizedTitle = `${id}-${agentName.replaceAll(/[^\da-z]/gi, '-').toLowerCase()}_${title.replaceAll(/[^\da-z]/gi, '-').toLowerCase()}-${Date.now()}.md`;
-        return path.join(parentChatDir, sanitizedTitle);
+        const taskDir = path.join(parentChatDir, 'tasks');
+        if (!fs.existsSync(taskDir)) {
+            fs.mkdirSync(taskDir);
+        }
+        return path.join(taskDir, sanitizedTitle);
     }
 
     private writeChatFile(task: Task): void {
