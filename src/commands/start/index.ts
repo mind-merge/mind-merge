@@ -121,7 +121,7 @@ export default class Start extends Command {
 
     const projectDir = process.cwd();
     ux.log("Project dir: ", ux.colorize('bgWhite', ux.colorize('blue', projectDir)));
-    const packageName = 'mind-merge-ai';
+    const packageName = '@mind-merge-ai/base-agents';
     
     if (fs.existsSync(`${projectDir}/package.json`)) {
       const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));

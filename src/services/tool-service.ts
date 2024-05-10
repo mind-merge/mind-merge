@@ -118,7 +118,7 @@ export class ToolService {
     }
 
     public initialize() {
-        const globalToolsDir = path.resolve('ai/tools');
+        const globalToolsDir = path.resolve('node_modules/@mind-merge-ai/base-agents/ai/tools');
         // this.loadToolsFromDirectory(globalToolsDir, this.globalTools);
         this.addWatcher(globalToolsDir, this.globalTools);
 

@@ -25,7 +25,7 @@ export class AgentService {
     }
 
     async handleFileChange(filePath: string): Promise<void> {
-        const agentsDir = path.resolve('ai/prompts/agents');
+        const agentsDir = path.resolve('node_modules/@mind-merge-ai/base-agents/ai/prompts/agents');
         if (!filePath.startsWith(agentsDir)) {
             return;
         }
@@ -38,7 +38,7 @@ export class AgentService {
 
     async initialize() {
         this.loadAgents();
-        const agentsDir = path.resolve('ai/prompts/agents');
+        const agentsDir = path.resolve('node_modules/@mind-merge-ai/base-agents/ai/prompts/agents');
         this.watcher = chokidar.watch(agentsDir, { persistent: true });
 
         this.watcher
