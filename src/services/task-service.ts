@@ -44,7 +44,6 @@ export class TaskService {
             .map(line => line.replace(/^\s*-\s*/, '').trim()) : [];
 
         // Determine the parent directory based on the agent's name
-        // This might need adjustments based on your application's directory structure
         const parentChatDir = path.dirname(parentChatFile);
         const taskDir = path.join(parentChatDir, 'tasks');
         let id: number = 0;
@@ -53,7 +52,8 @@ export class TaskService {
             files.forEach(file => {
                 const match = file.match(/(\d+)-/); // Matching the first numeric group which represents the ID
                 if (match && match[1]) {
-                    id = parseInt(match[1], 10) + 1;
+                    const fileId = parseInt(match[1], 10);
+                    if (fileId >= id) id = fileId + 1;
                 }
             });
         }
