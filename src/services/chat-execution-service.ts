@@ -60,26 +60,33 @@ export class ChatExecutionService {
         let taskOutputBufferPart: string = '';
         const pendingToolCalls: Array<PendingToolCall> = [];
         const tasksCreated: Array<Task> = [];
+        let breaking = false;
         fs.appendFileSync(filePath, '# Agent\n\n');
         
         for await (const chunk of data) {
             let deltaContent = chunk?.choices?.[0]?.delta?.content || chunk?.delta?.text || chunk?.text?.();
             if (!deltaContent) continue;
 
-            fs.appendFileSync(filePath, deltaContent);
-            process.stdout.write(deltaContent.toString());
             output += deltaContent.toString();
             toolBufferPart += deltaContent.toString();
             taskBufferPart += deltaContent.toString();
             taskOutputBufferPart += deltaContent.toString();
-            // check for start and end of tool call tags
 
+            if(taskBufferPart.includes('```task\n')) breaking = true;
+
+            // check for start and end of tool call tags
             const toolCallMatch = toolBufferPart.match(/```tool\n([\S\s]*?)\n```/im);
             if (toolCallMatch) {
+                breaking = false;
                 const toolCall = toolCallMatch[0];
                 const tool = this.toolsService.parseCallAndStartToolExecution(toolCall);
                 pendingToolCalls.push(tool);
                 toolBufferPart = '';
+            }
+
+            if (!breaking) {
+                fs.appendFileSync(filePath, deltaContent);
+                process.stdout.write(deltaContent.toString());
             }
 
             const taskCallMatch = taskBufferPart.match(/```task\n([\S\s]*?)\n```/im);
@@ -87,8 +94,11 @@ export class ChatExecutionService {
                 const taskCall = taskCallMatch[0];
                 const task = this.taskService.parseCallAndStartTaskExecution(taskCall, filePath);
 
-                if (task)
+                if (task) {
+                    // Here we append a reference to the task chat file instead of the task details
+                    fs.appendFileSync(filePath, `\nSee task details in: ${task.chatFilePath}\n`);
                     tasksCreated.push(task);
+                }
                 else
                     ux.logToStderr(ux.colorize('red', `Task parsing failed for task call: ${taskCall}`))
                 taskBufferPart = '';
