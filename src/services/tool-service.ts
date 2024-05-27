@@ -5,6 +5,7 @@ import {spawn} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {Service} from "typedi";
+import { HelpService } from "./help-service";
 
 export interface PendingToolCall {
     args: null | string[];
@@ -30,6 +31,10 @@ export class ToolService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private privateTools: Map<string, Map<string, any>> = new Map();
     private watchers: Map<string, chokidar.FSWatcher> = new Map();
+
+    constructor(
+        private helpService: HelpService,
+    ) {}
 
     public async executeTool(toolName: string, args: null | string[], agentName?: string | undefined, stdinData: string = ""): Promise<string> {
         let toolConfig = this.globalTools.get(toolName);
@@ -117,12 +122,15 @@ export class ToolService {
         this.loadYamlFile(filePath, toolsMap);
     }
 
-    public initialize() {
-        const globalToolsDir = path.resolve('node_modules/@mind-merge-ai/base-agents/ai/tools');
+    async initialize() {
+        let globalToolsDirs = await this.helpService.findAiFoldersInNodeModules('node_modules', 'ai/tools');
+        globalToolsDirs.push(path.resolve('ai/tools'));
         // this.loadToolsFromDirectory(globalToolsDir, this.globalTools);
-        this.addWatcher(globalToolsDir, this.globalTools);
 
-        ux.log(`Started monitoring global tools files in: ${globalToolsDir}`)
+        for(let globalToolsDir of globalToolsDirs){
+            this.addWatcher(globalToolsDir, this.globalTools);
+            ux.log(`Started monitoring global tools files in: ${globalToolsDir}`)
+        }
     }
 
     public parseAgentTools(agentName: string, agentDir: string) {

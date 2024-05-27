@@ -6,6 +6,7 @@ import {Service} from "typedi";
 
 import {Agent} from '../model';
 import {ToolService} from "./tool-service";
+import { HelpService } from "./help-service";
 
 import matter = require("gray-matter");
 
@@ -17,15 +18,15 @@ export class AgentService {
 
     // eslint-disable-next-line no-useless-constructor
     constructor(
-        private toolsService: ToolService
+        private toolsService: ToolService,
+        private helpService: HelpService,
     ) {}
 
     async getAgent(name: string): Promise<Agent> {
         return <Agent>this.agents.get(name);
     }
 
-    async handleFileChange(filePath: string): Promise<void> {
-        const agentsDir = path.resolve('node_modules/@mind-merge-ai/base-agents/ai/prompts/agents');
+    async handleFileChange(filePath: string, agentsDir: string): Promise<void> {
         if (!filePath.startsWith(agentsDir)) {
             return;
         }
@@ -38,14 +39,18 @@ export class AgentService {
 
     async initialize() {
         this.loadAgents();
-        const agentsDir = path.resolve('node_modules/@mind-merge-ai/base-agents/ai/prompts/agents');
-        this.watcher = chokidar.watch(agentsDir, { persistent: true });
-
-        this.watcher
-            .on('add', (filePath) => this.handleFileChange(filePath))
-            .on('change', (filePath) => this.handleFileChange(filePath));
-
-        ux.log(`Started monitoring agent files in: ${agentsDir}`)
+        let agentsDirs = await this.helpService.findAiFoldersInNodeModules('node_modules', 'ai/prompts/agents');
+        agentsDirs.push(path.resolve('ai/prompts/agents'));
+        
+        for(let agentsDir of agentsDirs){
+            this.watcher = chokidar.watch(agentsDir, { persistent: true });
+    
+            this.watcher
+                .on('add', (filePath) => this.handleFileChange(filePath, agentsDir))
+                .on('change', (filePath) => this.handleFileChange(filePath, agentsDir))
+    
+            ux.log(`Started monitoring agent files in: ${agentsDir}`)
+        }
     }
 
     async loadAgent(agentDir: string, agentName: string) {
