@@ -6,7 +6,7 @@ export class NewAgent extends Command {
     static description = 'Creates a new agent with a specified name';
 
     static examples = [
-        `$ mind-merge agent:new --agent-name=myAgent`,
+        `$ mind-merge agents --agent-name=myAgent`,
     ];
 
     static flags = {

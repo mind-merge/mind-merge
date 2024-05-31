@@ -38,7 +38,6 @@ export class AgentService {
     }
 
     async initialize() {
-        this.loadAgents();
         let agentsDirs = await this.helpService.findAiFoldersInNodeModules('node_modules', 'ai/prompts/agents');
         agentsDirs.push(path.resolve('ai/prompts/agents'));
         
@@ -85,20 +84,4 @@ export class AgentService {
         this.toolsService.parseAgentTools(agent.name, agentDir);
         ux.log(`Loaded agent: ${agent.name}(${filePath})`)
     }
-
-    async loadAgents():Promise<void> {
-        const agentsDir = path.resolve('ai/prompts');
-        const agentNames = fs.readdirSync(agentsDir);
-
-        for (const agentName of agentNames) {
-            const agentDir = path.join(agentsDir, agentName);
-            const stats = fs.statSync(agentDir);
-            if (!stats.isDirectory()) {
-                continue;
-            }
-
-            this.loadAgent(agentDir, agentName);
-        }
-    }
-
 }

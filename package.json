@@ -19,9 +19,7 @@
     "groq-sdk": "^0.3.3",
     "js-yaml": "^4.1.0",
     "liquidjs": "^10.10.0",
-    "lodash": "^4.17.21",
     "mime": "^4.0.1",
-    "mind-merge-ai": "^2.3.1",
     "openai": "^4.28.0",
     "reflect-metadata": "^0.2.1",
     "typedi": "^0.10.0"
@@ -88,6 +86,7 @@
     "prepack": "yarn build && oclif manifest && oclif readme",
     "prepare": "yarn build",
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
+    "test-feature": "cucumber-js",
     "test-cucumber": "./node_modules/.bin/cucumber-js -p default",
     "version": "oclif readme && git add README.md",
     "start": "node ./bin/dev.js start"
