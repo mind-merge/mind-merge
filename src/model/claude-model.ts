@@ -1,8 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { appConstant } from "../constants";
-import { MessageParam } from '@anthropic-ai/sdk/resources';
 import { MessageStream } from '@anthropic-ai/sdk/lib/MessageStream';
-import { Message, Role, IModel } from './index';
+import { MessageParam } from '@anthropic-ai/sdk/resources';
+
+import { appConstant } from "../constants";
+import { IModel, Message, Role } from './index';
 
 let client: Anthropic | null = null;
 
@@ -17,6 +18,7 @@ export class ClaudeModel implements IModel {
             console.error('Claude api key is not set.');
             return;
         }
+        
         client = new Anthropic({ apiKey: appConstant.CLAUDE_API_KEY });
     }
 
@@ -31,8 +33,10 @@ export class ClaudeModel implements IModel {
                 sysMsg += message.content;
                 continue;
             }
+            
             msgHistory.push({ ...message, role: message.role });
         }
+        
         return { message: sysMsg, msgHistory };
     }
 
@@ -41,13 +45,14 @@ export class ClaudeModel implements IModel {
         try {
             const { message, msgHistory } = await this.chatRequestFormat(messages);
             return client!.messages.stream({
-                system: message,
+                // eslint-disable-next-line camelcase
+                max_tokens: this.maxOutputTokens,
                 messages: msgHistory.map((message) => ({
                     content: message.content,
                     role: message.role
                 } as MessageParam)),
                 model: this.modelName,
-                max_tokens: this.maxOutputTokens,
+                system: message,
             });
         } catch (error) {
             throw new Error(`Error completing chat request with Claude: ${error}`);
