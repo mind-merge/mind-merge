@@ -135,8 +135,8 @@ export default class Start extends Command {
         }
       } else {
         // Package is not listed in package.json, install it
-        ux.log(`Installing ${packageName}...`);
-        await (isYarn ? this.installWithYarn(packageName) : this.installWithNpm(packageName));
+        // ux.log(`Installing ${packageName}...`);
+        // await (isYarn ? this.installWithYarn(packageName) : this.installWithNpm(packageName));
       }
     } else {
       // Project doesn't have a package.json file

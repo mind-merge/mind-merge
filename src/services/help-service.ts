@@ -30,15 +30,20 @@ export class HelpService {
         function checkDir(directory: string) {
             const packages = fs.readdirSync(directory);
             for (const pkg of packages) {
-                const packagePath = path.join(directory, pkg);
+                let packagePath = path.join(directory, pkg);
+                // check if packagePath is a link and follow it
+                if (fs.lstatSync(packagePath).isSymbolicLink())
+                    packagePath = fs.realpathSync(packagePath);
                 if (fs.lstatSync(packagePath).isDirectory()) {
                     if (fs.existsSync(path.join(packagePath, 'ai'))) {
                         aiPackages.push(path.resolve(`${packagePath}/${folderPath}`));
                     }
+
                     checkDir(packagePath);
                 }
             }
         }
+
         checkDir(dir);
         return aiPackages;
     }
