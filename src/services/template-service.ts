@@ -9,7 +9,7 @@ export class TemplateService {
     constructor() {
         this.liquidEngine = new Liquid({
             extname: '.md.liquid',
-            root: ['ai/prompts/', 'node_modules']
+            root: ['ai/prompts/', 'node_modules', 'node_modules/mind-merge-symfony/ai/prompts'] // FIXME: Fix this hardcoded hack to include all folders in node_modules that have ai in them
         });
     }
 
