@@ -4,7 +4,7 @@
     "mm": "./bin/run.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.20.8",
+    "@anthropic-ai/sdk": "^0.24.3",
     "@google/generative-ai": "^0.7.1",
     "@mind-merge-ai/base-agents": "^1.0.0",
     "@oclif/core": "^3",
