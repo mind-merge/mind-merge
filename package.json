@@ -1,5 +1,5 @@
 {
-  "author": "Alex Mincu @mincua",
+  "author": "Alexandru Mincu",
   "bin": {
     "mm": "./bin/run.js"
   },
@@ -59,9 +59,9 @@
     "/oclif.manifest.json"
   ],
   "homepage": "https://github.com/mincua/mm",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
-  "name": "mind-merge",
+  "name": "@mind-merge-ai/mind-merge",
   "oclif": {
     "bin": "mm",
     "dirname": "mind-merge",
@@ -77,7 +77,7 @@
       }
     }
   },
-  "repository": "mincua/mind-merge",
+  "repository": "mind-merge/mind-merge",
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
     "lint": "eslint . --ext .ts",
