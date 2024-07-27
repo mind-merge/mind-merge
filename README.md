@@ -1,380 +1,119 @@
-oclif-hello-world
-=================
+# MindMerge
 
-oclif example Hello World CLI
+MindMerge is an innovative tool designed to seamlessly integrate AI agents into your development workflow. It automates the creation and management of AI agents within your git projects, enabling efficient collaboration between developers and AI assistants.
 
-[![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
-[![CircleCI](https://circleci.com/gh/oclif/hello-world/tree/main.svg?style=shield)](https://circleci.com/gh/oclif/hello-world/tree/main)
-[![GitHub license](https://img.shields.io/github/license/oclif/hello-world)](https://github.com/oclif/hello-world/blob/main/LICENSE)
+## Features
 
-<!-- toc -->
-* [Usage](#usage)
-* [Commands](#commands)
-<!-- tocstop -->
-# Usage
-<!-- usage -->
-```sh-session
-$ npm install -g dev-copilot
-$ dev-copilot COMMAND
-running command...
-$ dev-copilot (--version)
-dev-copilot/0.0.0 darwin-arm64 node-v21.6.1
-$ dev-copilot --help [COMMAND]
-USAGE
-  $ dev-copilot COMMAND
-...
-```
-<!-- usagestop -->
-# Commands
-<!-- commands -->
-* [`dev-copilot hello PERSON`](#dev-copilot-hello-person)
-* [`dev-copilot hello world`](#dev-copilot-hello-world)
-* [`dev-copilot help [COMMANDS]`](#dev-copilot-help-commands)
-* [`dev-copilot plugins`](#dev-copilot-plugins)
-* [`dev-copilot plugins:install PLUGIN...`](#dev-copilot-pluginsinstall-plugin)
-* [`dev-copilot plugins:inspect PLUGIN...`](#dev-copilot-pluginsinspect-plugin)
-* [`dev-copilot plugins:install PLUGIN...`](#dev-copilot-pluginsinstall-plugin-1)
-* [`dev-copilot plugins:link PLUGIN`](#dev-copilot-pluginslink-plugin)
-* [`dev-copilot plugins:uninstall PLUGIN...`](#dev-copilot-pluginsuninstall-plugin)
-* [`dev-copilot plugins reset`](#dev-copilot-plugins-reset)
-* [`dev-copilot plugins:uninstall PLUGIN...`](#dev-copilot-pluginsuninstall-plugin-1)
-* [`dev-copilot plugins:uninstall PLUGIN...`](#dev-copilot-pluginsuninstall-plugin-2)
-* [`dev-copilot plugins update`](#dev-copilot-plugins-update)
+- **AI Agents Structure**: Automatically generates a directory structure within git projects for hosting AI agents, their prompts, skills, chats, and associated tools.
+- **Agent and Tool Definition**: Define AI agents and tools using markdown and YAML files, making them easy to share and version control.
+- **Multi-Agent Execution**: Run up to three background agents concurrently per project for optimized resource utilization and faster response times.
+- **AI Model Integration**: Supports OpenAI, Anthropic, Google, and Groq models, with plans to support additional models in future releases.
+- **CLI Interaction**: Interact with AI agents, initiate chats, and manage tool executions through a user-friendly command-line interface.
+- **Agent Collaboration**: Facilitate communication between different AI agents and tools to automate complex workflows and tasks within your development environment.
+- **Resource Management**: Efficiently manage generated files and diffs, ensuring that outputs from AI interactions are properly stored and versioned.
+- **Extensibility**: Create and share npm packages with custom agents and tools.
 
-## `dev-copilot hello PERSON`
+## Getting Started
 
-Say hello
+### Prerequisites
 
-```
-USAGE
-  $ dev-copilot hello PERSON -f <value>
+- Node.js and npm
+- Git
+- Valid API tokens for supported AI models
 
-ARGUMENTS
-  PERSON  Person to say hello to
+### Installation
 
-FLAGS
-  -f, --from=<value>  (required) Who is saying hello
+Install MindMerge globally using npm:
 
-DESCRIPTION
-  Say hello
-
-EXAMPLES
-  $ oex hello friend --from oclif
-  hello friend from oclif! (./src/commands/hello/index.ts)
+```bash
+npm install -g @mind-merge-ai/mind-merge
 ```
 
-_See code: [src/commands/hello/index.ts](https://github.com/mincua/dev-copilot/blob/v0.0.0/src/commands/hello/index.ts)_
+### Environment Variables
 
-## `dev-copilot hello world`
+Set up the following environment variables with your API keys:
 
-Say hello world
-
-```
-USAGE
-  $ dev-copilot hello world
-
-DESCRIPTION
-  Say hello world
-
-EXAMPLES
-  $ dev-copilot hello world
-  hello world! (./src/commands/hello/world.ts)
+```bash
+CLAUDE_API_KEY=your_claude_api_key
+GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 
-_See code: [src/commands/hello/world.ts](https://github.com/mincua/dev-copilot/blob/v0.0.0/src/commands/hello/world.ts)_
+### Basic Usage
 
-## `dev-copilot help [COMMANDS]`
+1. Initialize MindMerge in your project:
+   ```bash
+   mm init
+   ```
 
-Display help for dev-copilot.
+2. Start the MindMerge listener:
+   ```bash
+   mm start
+   ```
 
-```
-USAGE
-  $ dev-copilot help [COMMANDS] [-n]
+3. Create a new chat:
+   ```bash
+   mm chats:new --user="your-name" --name="chat-name"
+   ```
 
-ARGUMENTS
-  COMMANDS  Command to show help for.
+4. Edit the generated markdown file in the `ai/chats/your-name/chat-name/` directory to interact with AI agents.
 
-FLAGS
-  -n, --nested-commands  Include all nested commands in the output.
+5. To get an agent to respond to your query:
+    - Write your message in the chat file
+    - End the file with "\n---\n"
+    - Save the file to disk
+    - The listener service will pick up the change and execute the request
+    - The agent's reply will be appended to the same file
 
-DESCRIPTION
-  Display help for dev-copilot.
-```
+6. To edit a query:
+    - Delete the agent's response from the file
+    - Update your message above
+    - End the file with "\n---\n" and save it to trigger a new response
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v6.0.12/src/commands/help.ts)_
+## Project Structure
 
-## `dev-copilot plugins`
-
-List installed plugins.
-
-```
-USAGE
-  $ dev-copilot plugins [--json] [--core]
-
-FLAGS
-  --core  Show core plugins.
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  List installed plugins.
-
-EXAMPLES
-  $ dev-copilot plugins
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.1.21/src/commands/plugins/index.ts)_
-
-## `dev-copilot plugins:install PLUGIN...`
-
-Installs a plugin into the CLI.
+MindMerge creates the following directory structure in your project:
 
 ```
-USAGE
-  $ dev-copilot plugins add plugins:install PLUGIN...
-
-ARGUMENTS
-  PLUGIN  Plugin to install.
-
-FLAGS
-  -f, --force    Run yarn install with force flag.
-  -h, --help     Show CLI help.
-  -s, --silent   Silences yarn output.
-  -v, --verbose  Show verbose yarn output.
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  Installs a plugin into the CLI.
-  Can be installed from npm or a git url.
-
-  Installation of a user-installed plugin will override a core plugin.
-
-  e.g. If you have a core plugin that has a 'hello' command, installing a user-installed plugin with a 'hello' command
-  will override the core plugin implementation. This is useful if a user needs to update core plugin functionality in
-  the CLI without the need to patch and update the whole CLI.
-
-
-ALIASES
-  $ dev-copilot plugins add
-
-EXAMPLES
-  $ dev-copilot plugins add myplugin 
-
-  $ dev-copilot plugins add https://github.com/someuser/someplugin
-
-  $ dev-copilot plugins add someuser/someplugin
+ai/
+├── agents/
+│   └── {agent-name}/
+│       ├── {agent-name}.md
+│       └── tools/
+├── tools/
+└── chats/
+    └── {user-name}/
+        └── {chat-name}/
+            ├── chat.md
+            └── resources/
 ```
 
-## `dev-copilot plugins:inspect PLUGIN...`
+## Extending MindMerge
 
-Displays installation properties of a plugin.
+You can create npm packages with custom agents and tools. Check out [@mind-merge-ai/base-models](https://www.npmjs.com/package/@mind-merge-ai/base-models) for the structure and examples of how to create your own extensions.
 
-```
-USAGE
-  $ dev-copilot plugins inspect PLUGIN...
+## Documentation
 
-ARGUMENTS
-  PLUGIN  [default: .] Plugin to inspect.
+For more detailed information on how to use MindMerge, define agents and tools, and interact with the system, please refer to our [documentation](link-to-documentation).
 
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
+## Contributing
 
-GLOBAL FLAGS
-  --json  Format output as json.
+We welcome contributions to MindMerge! Please read our [Contributing Guide](link-to-contributing-guide) for details on our code of conduct and the process for submitting pull requests.
 
-DESCRIPTION
-  Displays installation properties of a plugin.
+## License
 
-EXAMPLES
-  $ dev-copilot plugins inspect myplugin
-```
+This project is licensed under the [GNU General Public License v3.0 (GPLv3)](https://www.gnu.org/licenses/gpl-3.0.en.html).
 
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.1.21/src/commands/plugins/inspect.ts)_
+## Acknowledgments
 
-## `dev-copilot plugins:install PLUGIN...`
+- This project was inspired by the need for better integration of AI assistants in development workflows.
+- Special thanks to the [Aider](https://github.com/paul-gauthier/aider) project for inspiration on diff handling.
 
-Installs a plugin into the CLI.
+## Contact
 
-```
-USAGE
-  $ dev-copilot plugins install PLUGIN...
+For questions, suggestions, or support, please [open an issue](link-to-issues) on our GitHub repository.
 
-ARGUMENTS
-  PLUGIN  Plugin to install.
+---
 
-FLAGS
-  -f, --force    Run yarn install with force flag.
-  -h, --help     Show CLI help.
-  -s, --silent   Silences yarn output.
-  -v, --verbose  Show verbose yarn output.
-
-GLOBAL FLAGS
-  --json  Format output as json.
-
-DESCRIPTION
-  Installs a plugin into the CLI.
-  Can be installed from npm or a git url.
-
-  Installation of a user-installed plugin will override a core plugin.
-
-  e.g. If you have a core plugin that has a 'hello' command, installing a user-installed plugin with a 'hello' command
-  will override the core plugin implementation. This is useful if a user needs to update core plugin functionality in
-  the CLI without the need to patch and update the whole CLI.
-
-
-ALIASES
-  $ dev-copilot plugins add
-
-EXAMPLES
-  $ dev-copilot plugins install myplugin 
-
-  $ dev-copilot plugins install https://github.com/someuser/someplugin
-
-  $ dev-copilot plugins install someuser/someplugin
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.1.21/src/commands/plugins/install.ts)_
-
-## `dev-copilot plugins:link PLUGIN`
-
-Links a plugin into the CLI for development.
-
-```
-USAGE
-  $ dev-copilot plugins link PLUGIN
-
-ARGUMENTS
-  PATH  [default: .] path to plugin
-
-FLAGS
-  -h, --help          Show CLI help.
-  -v, --verbose
-      --[no-]install  Install dependencies after linking the plugin.
-
-DESCRIPTION
-  Links a plugin into the CLI for development.
-  Installation of a linked plugin will override a user-installed or core plugin.
-
-  e.g. If you have a user-installed or core plugin that has a 'hello' command, installing a linked plugin with a 'hello'
-  command will override the user-installed or core plugin implementation. This is useful for development work.
-
-
-EXAMPLES
-  $ dev-copilot plugins link myplugin
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.1.21/src/commands/plugins/link.ts)_
-
-## `dev-copilot plugins:uninstall PLUGIN...`
-
-Removes a plugin from the CLI.
-
-```
-USAGE
-  $ dev-copilot plugins remove plugins:uninstall PLUGIN...
-
-ARGUMENTS
-  PLUGIN  plugin to uninstall
-
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
-
-DESCRIPTION
-  Removes a plugin from the CLI.
-
-ALIASES
-  $ dev-copilot plugins unlink
-  $ dev-copilot plugins remove
-
-EXAMPLES
-  $ dev-copilot plugins remove myplugin
-```
-
-## `dev-copilot plugins reset`
-
-Remove all user-installed and linked plugins.
-
-```
-USAGE
-  $ dev-copilot plugins reset
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.1.21/src/commands/plugins/reset.ts)_
-
-## `dev-copilot plugins:uninstall PLUGIN...`
-
-Removes a plugin from the CLI.
-
-```
-USAGE
-  $ dev-copilot plugins uninstall PLUGIN...
-
-ARGUMENTS
-  PLUGIN  plugin to uninstall
-
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
-
-DESCRIPTION
-  Removes a plugin from the CLI.
-
-ALIASES
-  $ dev-copilot plugins unlink
-  $ dev-copilot plugins remove
-
-EXAMPLES
-  $ dev-copilot plugins uninstall myplugin
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.1.21/src/commands/plugins/uninstall.ts)_
-
-## `dev-copilot plugins:uninstall PLUGIN...`
-
-Removes a plugin from the CLI.
-
-```
-USAGE
-  $ dev-copilot plugins unlink plugins:uninstall PLUGIN...
-
-ARGUMENTS
-  PLUGIN  plugin to uninstall
-
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
-
-DESCRIPTION
-  Removes a plugin from the CLI.
-
-ALIASES
-  $ dev-copilot plugins unlink
-  $ dev-copilot plugins remove
-
-EXAMPLES
-  $ dev-copilot plugins unlink myplugin
-```
-
-## `dev-copilot plugins update`
-
-Update installed plugins.
-
-```
-USAGE
-  $ dev-copilot plugins update [-h] [-v]
-
-FLAGS
-  -h, --help     Show CLI help.
-  -v, --verbose
-
-DESCRIPTION
-  Update installed plugins.
-```
-
-_See code: [@oclif/plugin-plugins](https://github.com/oclif/plugin-plugins/blob/v4.1.21/src/commands/plugins/update.ts)_
-<!-- commandsstop -->
+Happy coding with MindMerge! 🧠💻
