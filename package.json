@@ -58,7 +58,7 @@
     "/dist",
     "/oclif.manifest.json"
   ],
-  "homepage": "https://github.com/mincua/mm",
+  "homepage": "https://mind-merge.net",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "name": "@mind-merge-ai/mind-merge",
