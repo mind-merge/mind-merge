@@ -41,18 +41,35 @@ export class AgentService {
         const agentsDirs = await this.helpService.findAiFoldersInNodeModules('node_modules', 'ai/prompts/agents');
         agentsDirs.push(path.resolve('ai/prompts/agents'));
 
-        const watcherPromises = agentsDirs.map(agentsDir =>
-            this.watcherService.registerWatcher({
-                directory: agentsDir,
-                onAdd: (filePath) => this.handleFileChange(filePath, agentsDir),
-                onChange: (filePath) => this.handleFileChange(filePath, agentsDir),
-                onReady: () => {
-                    ux.log(ux.colorize('blue', `Finished loading agent files in: ${agentsDir}`));
-                }
-            })
-        );
+        const allPromises: Promise<void>[] = [];
 
-        await Promise.all(watcherPromises);
+        const watcherPromises = agentsDirs.map(agentsDir => {
+            return new Promise<void>((resolveWatcher) => {
+                const handleFileChangePromises: Promise<void>[] = [];
+
+                this.watcherService.registerWatcher({
+                    directory: agentsDir,
+                    onAdd: (filePath) => {
+                        const promise = this.handleFileChange(filePath, agentsDir);
+                        handleFileChangePromises.push(promise);
+                        return promise;
+                    },
+                    onChange: (filePath) => this.handleFileChange(filePath, agentsDir),
+                    // eslint-disable-next-line object-shorthand
+                    onReady: () => {
+                        ux.log(ux.colorize('blue', `Finished scanning agent files in: ${agentsDir}`));
+                        Promise.all(handleFileChangePromises).then(() => {
+                            ux.log(ux.colorize('blue', `Finished loading all agent files in: ${agentsDir}`));
+                            resolveWatcher();
+                        });
+                    }
+                });
+            });
+        });
+
+        allPromises.push(...watcherPromises);
+
+        await Promise.all(allPromises);
         ux.log(ux.colorize('green', 'All agents have been loaded'));
     }
 
@@ -68,6 +85,8 @@ export class AgentService {
         } catch {
             return;
         }
+
+        ux.log(ux.colorize('yellow', `Loading agent: ${agentName}`));
 
         const fileContent = await fs.readFile(filePath, 'utf8');
         const parsedContent = matter(fileContent);

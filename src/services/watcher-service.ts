@@ -55,10 +55,11 @@ export class WatcherService {
         ux.log(ux.colorize('blue', `Change listeners ${enable ? 'enabled' : 'disabled'}`));
     }
 
-    unregisterAllWatchers(): void {
+    async unregisterAllWatchers() {
         for (const [directory, watchers] of this.watchers) {
             for (const watcher of watchers)
-                watcher.close();
+                // eslint-disable-next-line no-await-in-loop
+                await watcher.close();
             ux.log(ux.colorize('yellow', `Unregistered all watchers for: ${directory}`));
         }
 
@@ -66,11 +67,12 @@ export class WatcherService {
         ux.log(ux.colorize('green', 'All watchers unregistered'));
     }
 
-    unregisterWatcher(directory: string): void {
+    async unregisterWatcher(directory: string) {
         const watchers = this.watchers.get(directory);
         if (watchers) {
             for (const watcher of watchers)
-                watcher.close();
+                // eslint-disable-next-line no-await-in-loop
+                await watcher.close();
             this.watchers.delete(directory);
             ux.log(ux.colorize('yellow', `Unregistered all watchers for: ${directory}`));
         }

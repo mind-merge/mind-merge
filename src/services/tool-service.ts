@@ -230,8 +230,8 @@ export class ToolService {
     }
 
 
-    private handleFileChange(filePath: string, toolsMap: Map<string, any>) {
-        this.loadYamlFile(filePath, toolsMap);
+    private async handleFileChange(filePath: string, toolsMap: Map<string, any>) {
+        await this.loadYamlFile(filePath, toolsMap);
     }
 
     private async loadYamlFile(filePath: string, toolsMap: Map<string, any>): Promise<void> {
