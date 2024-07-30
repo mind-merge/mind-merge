@@ -1,12 +1,12 @@
 import {ux} from "@oclif/core";
-import * as chokidar from 'chokidar';
-import * as fs from 'node:fs';
+import {promises as fs} from 'node:fs';
 import * as path from 'node:path';
 import {Service} from "typedi";
 
 import {Agent} from '../model';
+import {HelpService} from "./help-service";
 import {ToolService} from "./tool-service";
-import { HelpService } from "./help-service";
+import {WatcherService} from "./watcher-service";
 
 import matter = require("gray-matter");
 
@@ -14,12 +14,12 @@ import matter = require("gray-matter");
 @Service()
 export class AgentService {
     agents: Map<string, Agent> = new Map<string, Agent>();
-    private watcher: chokidar.FSWatcher | undefined;
 
     // eslint-disable-next-line no-useless-constructor
     constructor(
         private toolsService: ToolService,
         private helpService: HelpService,
+        private watcherService: WatcherService,
     ) {}
 
     async getAgent(name: string): Promise<Agent> {
@@ -38,18 +38,22 @@ export class AgentService {
     }
 
     async initialize() {
-        let agentsDirs = await this.helpService.findAiFoldersInNodeModules('node_modules', 'ai/prompts/agents');
+        const agentsDirs = await this.helpService.findAiFoldersInNodeModules('node_modules', 'ai/prompts/agents');
         agentsDirs.push(path.resolve('ai/prompts/agents'));
-        
-        for(let agentsDir of agentsDirs){
-            this.watcher = chokidar.watch(agentsDir, { persistent: true });
-    
-            this.watcher
-                .on('add', (filePath) => this.handleFileChange(filePath, agentsDir))
-                .on('change', (filePath) => this.handleFileChange(filePath, agentsDir))
-    
-            ux.log(`Started monitoring agent files in: ${agentsDir}`)
-        }
+
+        const watcherPromises = agentsDirs.map(agentsDir =>
+            this.watcherService.registerWatcher({
+                directory: agentsDir,
+                onAdd: (filePath) => this.handleFileChange(filePath, agentsDir),
+                onChange: (filePath) => this.handleFileChange(filePath, agentsDir),
+                onReady: () => {
+                    ux.log(ux.colorize('blue', `Finished loading agent files in: ${agentsDir}`));
+                }
+            })
+        );
+
+        await Promise.all(watcherPromises);
+        ux.log(ux.colorize('green', 'All agents have been loaded'));
     }
 
     async loadAgent(agentDir: string, agentName: string) {
@@ -57,14 +61,15 @@ export class AgentService {
 
         let filePath;
         let format;
-        if (fs.existsSync(agentLiquidFile)) {
+        try {
+            await fs.access(agentLiquidFile);
             filePath = agentLiquidFile;
             format = 'liquid';
-        } else {
+        } catch {
             return;
         }
 
-        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const fileContent = await fs.readFile(filePath, 'utf8');
         const parsedContent = matter(fileContent);
 
         const agent = new Agent(
@@ -81,7 +86,7 @@ export class AgentService {
         );
 
         this.agents.set(agent.name, agent);
-        this.toolsService.parseAgentTools(agent.name, agentDir);
-        ux.log(`Loaded agent: ${agent.name}(${filePath})`)
+        await this.toolsService.loadAgentTools(agent.name, agentDir);
+        ux.log(`Loaded agent: ${agent.name}(${filePath})`);
     }
 }

@@ -7,6 +7,8 @@ import {AgentService} from "./agent-service";
 import {ChatMonitorService} from "./chat-monitor-service";
 import {HelpService} from "./help-service";
 import {ToolService} from "./tool-service";
+import {ChatExecutionService} from "./chat-execution-service";
+import {WatcherService} from "./watcher-service";
 
 // eslint-disable-next-line new-cap
 @Service()
@@ -17,7 +19,9 @@ export class ProjectService {
         private helpService: HelpService,
         private agentsService: AgentService,
         private chatMonitorService: ChatMonitorService,
-        private toolsService: ToolService
+        private chatExecutionService: ChatExecutionService,
+        private toolsService: ToolService,
+        private watcherService: WatcherService,
     ) {}
 
     async ensureDirectoriesExist() {
@@ -41,7 +45,7 @@ export class ProjectService {
                 }
             }
 
-            //create main agent file if it doesn't exist
+            // create main agent file if it doesn't exist
             if(['ai/prompts/agents/main'].includes(dir)){
                 const mainAgentFilePath = `${dirPath}/main.md.liquid`;
                 if (!fs.existsSync(mainAgentFilePath)) {
@@ -57,13 +61,42 @@ export class ProjectService {
     }
 
     async initialize() {
-        await ux.action.start('Initializing mind-merge project');
+        ux.action.start('Initializing mind-merge project');
 
         await this.ensureDirectoriesExist();
         await this.agentsService.initialize();
         await this.chatMonitorService.initialize();
-        this.toolsService.initialize();
+        await this.toolsService.initialize();
 
-        await ux.action.stop();
+        ux.action.stop();
+    }
+
+
+    async kickoff(chatFile:string) {
+        ux.action.start('Loading mind-merge files');
+
+        await this.ensureDirectoriesExist();
+        this.watcherService.setEnableChangeListeners(false);
+        await this.agentsService.initialize();
+        if (path.extname(chatFile) !== '.md') {
+            console.error('Invalid chat file. Chat file must be a markdown file with a .md extension');
+            return;
+        }
+
+        let content = fs.readFileSync(chatFile, 'utf8');
+        // Check if file ends in "\n---\n", if it doesn't append it to the end of the file
+        if (!content.endsWith("\n---\n")) {
+            console.warn('Chat file does not end with "---", appending...');
+            content += "\n---\n";
+            fs.writeFileSync(chatFile, content);
+        }
+
+        ux.action.stop();
+
+        ux.log(ux.colorize('green', `Starting chat processing for file: ${chatFile}`))
+
+        await this.chatExecutionService.startChatProcessing(chatFile, content);
+
+        this.watcherService.unregisterAllWatchers();
     }
 }

@@ -166,6 +166,7 @@ export class ChatExecutionService {
         } catch (error) {
             console.error(error);
         }
+
         this.processingFiles.delete(filePath);
     }
 

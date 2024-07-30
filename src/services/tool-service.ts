@@ -1,11 +1,12 @@
 import {ux} from "@oclif/core";
-import * as chokidar from "chokidar";
 import * as yaml from 'js-yaml';
 import {spawn} from 'node:child_process';
-import * as fs from 'node:fs';
+import {promises as fs} from 'node:fs';
 import * as path from 'node:path';
 import {Service} from "typedi";
+
 import { HelpService } from "./help-service";
+import { WatcherService } from "./watcher-service";
 
 export interface PendingToolCall {
     args: null | string[];
@@ -25,15 +26,13 @@ export interface ToolCall {
 // eslint-disable-next-line new-cap
 @Service()
 export class ToolService {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private globalTools: Map<string, any> = new Map();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private privateTools: Map<string, Map<string, any>> = new Map();
-    private watchers: Map<string, chokidar.FSWatcher> = new Map();
 
+    // eslint-disable-next-line no-useless-constructor
     constructor(
         private helpService: HelpService,
+        private watcherService: WatcherService,
     ) {}
 
     public async executeTool(toolName: string, args: null | string[], agentName?: string | undefined, stdinData: string = ""): Promise<string> {
@@ -99,61 +98,53 @@ export class ToolService {
                     child.stdin.write(stdinData);
                     child.stdin.end();
                 }
-
             });
         } catch (error) {
-            // @ts-expect-error don't care about the error type
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
             console.error(`Execution failed for tool '${toolName}': ${error.message}`);
-            throw error; // Rethrow to allow higher-level handling if needed
+            throw error;
         }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public getAgentTools(agentName: string): any[] {
+    public getAgentTools(agentName: string): unknown[] {
         return [...(this.privateTools.get(agentName)?.values() || [])];
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    public getAllGlobalTools(): any[] {
+    public getAllGlobalTools(): unknown[] {
         return [...this.globalTools.values()];
     }
 
-    handleFileChange(filePath: string, toolsMap: Map<string, any>) {
-        this.loadYamlFile(filePath, toolsMap);
-    }
-
-    async initialize() {
-        let globalToolsDirs = await this.helpService.findAiFoldersInNodeModules('node_modules', 'ai/tools');
+    public async initialize() {
+        const globalToolsDirs = await this.helpService.findAiFoldersInNodeModules('node_modules', 'ai/tools');
         globalToolsDirs.push(path.resolve('ai/tools'));
-        // this.loadToolsFromDirectory(globalToolsDir, this.globalTools);
 
-        for(let globalToolsDir of globalToolsDirs){
-            this.addWatcher(globalToolsDir, this.globalTools);
-            ux.log(`Started monitoring global tools files in: ${globalToolsDir}`)
+        for(const globalToolsDir of globalToolsDirs) {
+            // eslint-disable-next-line no-await-in-loop
+            await this.watcherService.registerWatcher({
+                directory: path.join(globalToolsDir, '*.yaml'),
+                onAdd: (filePath) => this.handleFileChange(filePath, this.globalTools),
+                onChange: (filePath) => this.handleFileChange(filePath, this.globalTools),
+                onReady: () => ux.log(`Loaded and started monitoring global tools files in: ${globalToolsDir}`)
+            });
         }
     }
 
-    public parseAgentTools(agentName: string, agentDir: string) {
+    public async loadAgentTools(agentName: string, agentDir: string) {
         const toolsDir = path.join(agentDir, 'tools');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const agentToolsMap = new Map<string, any>();
         this.privateTools.set(agentName, agentToolsMap);
 
-        if (!this.watchers.has(toolsDir)) {
-            this.addWatcher(toolsDir, agentToolsMap);
-        }
+        await this.watcherService.registerWatcher({
+            directory: path.join(toolsDir, '*.yaml'),
+            onAdd: (filePath) => this.handleFileChange(filePath, agentToolsMap),
+            onChange: (filePath) => this.handleFileChange(filePath, agentToolsMap),
+            onReady: () => ux.log(`Loaded and started monitoring tools for agent ${agentName} in: ${toolsDir}`)
+        });
     }
 
-    parseCallAndStartToolExecution(toolCall: string, fromAgent?: string): PendingToolCall {
-        // The tool call is expected to be in the following format:
-        // ```tool
-        // # tool_name
-        // ## args:
-        // value1
-        // ## stdin:
-        // Text to send to stdin if necessary
-        // ```
-
+    public parseCallAndStartToolExecution(toolCall: string, fromAgent?: string): PendingToolCall {
         const toolBlockMatch = toolCall.match(/```tool\n([\S\s]*?)\n```/im);
         if (!toolBlockMatch) {
             throw new Error('Tool block not found in tool call.');
@@ -172,7 +163,6 @@ export class ToolService {
             throw new Error('Tool name not found in tool call.');
         }
 
-        // Execute the tool with the parsed name, args, and stdin
         return {
             args,
             name,
@@ -181,22 +171,23 @@ export class ToolService {
         };
     }
 
-    async processTools(pendingToolCalls: Array<PendingToolCall>, filePath: string):Promise<Array<ToolCall>>
-    {
+    public async processTools(pendingToolCalls: Array<PendingToolCall>, filePath: string): Promise<Array<ToolCall>> {
         const ret = [];
-        // Wait for all tools to finish
         const outputPromises = pendingToolCalls.map(async (tool) => tool.output);
         const outputs = await Promise.all(outputPromises);
         for (const [i, tool] of pendingToolCalls.entries()) {
-            const toolOutputFilename = this.generateToolOutputFilename(filePath, tool.name);
-            this.saveToolOutputToFile(outputs[i], toolOutputFilename.filePath);
+            // eslint-disable-next-line no-await-in-loop
+            const toolOutputFilename = await this.generateToolOutputFilename(filePath, tool.name);
+            // eslint-disable-next-line no-await-in-loop
+            await this.saveToolOutputToFile(outputs[i], toolOutputFilename.filePath);
 
             const header = `# Tool ${tool.name}\nHere is the output of the tool you called, please check if it `+
-                                  `completed successfully and try to fix it if it didn't.\n`;
+                `completed successfully and try to fix it if it didn't.\n`;
             const chatMessage = `${header}---\n${outputs[i]}\n---\n`;
             const fileMessage = `\n\n---\n${header}[Tool ${tool.name} output](${toolOutputFilename.shortPath})\n\n---\n`;
 
-            fs.appendFileSync(filePath, fileMessage);
+            // eslint-disable-next-line no-await-in-loop
+            await fs.appendFile(filePath, fileMessage);
 
             console.log(ux.colorize('green', `\nTool ${tool.name} output dumped to file: ${toolOutputFilename}`));
             process.stdout.write(fileMessage);
@@ -210,37 +201,24 @@ export class ToolService {
         return ret;
     }
 
-    private addWatcher(directory: string, toolsMap: Map<string, any>) {
-        const watcher = chokidar.watch(path.join(directory, '*.yaml'), { persistent: true });
-
-        watcher
-            .on('add', (filePath) => this.handleFileChange(filePath, toolsMap))
-            .on('change', (filePath) => this.handleFileChange(filePath, toolsMap));
-
-        this.watchers.set(directory, watcher);
-    }
-
-    private generateToolOutputFilename(chatFile: string, toolName: string): {
+    private async generateToolOutputFilename(chatFile: string, toolName: string): Promise<{
         directory: string
         fileName: string;
         filePath: string;
         shortPath: string;
-    }
-    {
-        // Get directory from chat file, relative to the current working directory
+    }> {
         let directory = path.dirname(chatFile);
-        // keep the dir relative to the current working directory
         if (directory.startsWith(process.cwd())) {
             directory = directory.slice(process.cwd().length + 1);
         }
 
-        // Check if `resources` directory exists and create it if it doesn't
         const resourcesDir = path.join(directory, 'resources');
-        if (!fs.existsSync(resourcesDir)) {
-            fs.mkdirSync(resourcesDir);
+        try {
+            await fs.access(resourcesDir);
+        } catch {
+            await fs.mkdir(resourcesDir, { recursive: true });
         }
 
-        // Generates a unique filename for a tool output in the resources directory
         const timestamp = Date.now();
 
         return {
@@ -251,22 +229,26 @@ export class ToolService {
         };
     }
 
-    private loadYamlFile(filePath: string, toolsMap: Map<string, any>): void {
+
+    private handleFileChange(filePath: string, toolsMap: Map<string, any>) {
+        this.loadYamlFile(filePath, toolsMap);
+    }
+
+    private async loadYamlFile(filePath: string, toolsMap: Map<string, any>): Promise<void> {
         const toolName = path.basename(filePath, '.yaml');
         try {
-            const toolConfig = yaml.load(fs.readFileSync(filePath, 'utf8'));
-            // @ts-expect-error don't care about the error type
+            const fileContent = await fs.readFile(filePath, 'utf8');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const toolConfig:any = yaml.load(fileContent);
             toolConfig.name = toolName;
             toolsMap.set(toolName, toolConfig);
+            ux.log(`Loaded tool: ${toolName} from ${filePath}`);
         } catch (error) {
             console.error(`Error parsing YAML file at ${filePath}: ${error}`);
         }
-
-        ux.log(`Loaded tool: ${toolName} from ${filePath}`);
     }
 
-    private saveToolOutputToFile(toolOutput: string, filePath: string) {
-        // Saves tool output to a file
-        fs.writeFileSync(filePath, toolOutput, 'utf8');
+    private async saveToolOutputToFile(toolOutput: string, filePath: string) {
+        await fs.writeFile(filePath, toolOutput, 'utf8');
     }
 }
