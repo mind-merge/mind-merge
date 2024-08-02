@@ -5,7 +5,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.8",
-    "@google/generative-ai": "^0.7.1",
+    "@google/generative-ai": "^0.16.0",
     "@mind-merge-ai/base-agents": "^1.0.0",
     "@oclif/core": "^3",
     "@oclif/plugin-help": "^6",
