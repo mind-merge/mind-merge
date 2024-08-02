@@ -14,12 +14,12 @@ export class ClaudeModel implements IModel {
         private modelName: string,
         private maxOutputTokens: number = 4096
     ) {
-        if (!appConstant.CLAUDE_API_KEY) {
+        if (!appConstant.ANTHROPIC_API_KEY) {
             console.error('Claude api key is not set.');
             return;
         }
         
-        client = new Anthropic({ apiKey: appConstant.CLAUDE_API_KEY });
+        client = new Anthropic({ apiKey: appConstant.ANTHROPIC_API_KEY });
     }
 
     /**

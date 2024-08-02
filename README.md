@@ -36,7 +36,7 @@ Easy peasy, lemon squeezy! 🍋
 Set these up in your `.env` file or your system environment:
 
 ```bash
-CLAUDE_API_KEY=your_claude_api_key
+ANTHROPIC_API_KEY=your_ANTHROPIC_API_KEY
 GEMINI_API_KEY=your_gemini_api_key
 GROQ_API_KEY=your_groq_api_key
 OPENAI_API_KEY=your_openai_api_key
