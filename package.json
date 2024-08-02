@@ -91,7 +91,7 @@
     "version": "oclif readme && git add README.md",
     "start": "node ./bin/dev.js start"
   },
-  "version": "0.0.5",
+  "version": "0.1.0",
   "bugs": "https://github.com/mincua/mind-merge/issues",
   "keywords": [
     "oclif"
