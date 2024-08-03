@@ -1,5 +1,8 @@
 import { Liquid } from 'liquidjs';
+import * as path from 'node:path';
 import {Service} from "typedi";
+
+import {TemplateFileSystem} from "./template-file-system";
 
 // eslint-disable-next-line new-cap
 @Service()
@@ -7,9 +10,26 @@ export class TemplateService {
     private liquidEngine: Liquid;
 
     constructor() {
+        const currentDir = process.cwd();
+        const fs = new TemplateFileSystem(currentDir);
+
         this.liquidEngine = new Liquid({
             extname: '.md.liquid',
-            root: ['ai/prompts/', 'node_modules', 'node_modules/mind-merge-symfony/ai/prompts'] // FIXME: Fix this hardcoded hack to include all folders in node_modules that have ai in them
+            fs: {
+                contains: fs.contains,
+                dirname: fs.dirname,
+                exists: fs.exists,
+                existsSync: fs.existsSync,
+                fallback: fs.fallback,
+                readFile: fs.readFile,
+                readFileSync: fs.readFileSync,
+                resolve: fs.resolve,
+                sep: fs.sep
+            },
+            root: [
+                currentDir,
+                path.join(currentDir, 'ai', 'prompts'),
+            ]
         });
     }
 

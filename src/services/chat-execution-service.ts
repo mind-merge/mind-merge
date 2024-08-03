@@ -2,7 +2,7 @@ import {ux} from "@oclif/core";
 import * as fs from 'node:fs';
 import {Service} from "typedi";
 
-import {Agent, Chat, Message, Role, AsyncIterableChunk, Task, Provider} from '../model';
+import {Agent, AsyncIterableChunk, Chat, Message, Provider, Role, Task} from '../model';
 import {ChatParserService} from "./chat-parser-service";
 import {EditorInteractionService} from "./editor-interaction-service";
 import {GlobalFlagsService} from "./global-flags-service";
@@ -38,7 +38,7 @@ export class ChatExecutionService {
 
     async generateChatCompletionRequest(chat:Chat): Promise<Message[]> {
         // Check if agent format is liquid or md
-        let tools = [...this.toolsService.getAllGlobalTools(), ...this.toolsService.getAgentTools(chat.agent.name)];
+        const tools = [...this.toolsService.getAllGlobalTools(), ...this.toolsService.getAgentTools(chat.agent.name)];
 
         const templateData = {
             chatFile: chat.fileName,
