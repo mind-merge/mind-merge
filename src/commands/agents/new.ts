@@ -1,4 +1,4 @@
-import {Args, Command, Flags, ux} from '@oclif/core';
+import {Args, Command, ux} from '@oclif/core';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
