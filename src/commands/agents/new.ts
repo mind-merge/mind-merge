@@ -1,23 +1,21 @@
-import { Command, Flags, ux } from '@oclif/core';
+import {Args, Command, Flags, ux} from '@oclif/core';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 export class NewAgent extends Command {
+    static args = {
+        agentName: Args.file({
+            description: 'name of the agent',
+            name: 'agent-name',
+            required: true
+        })
+    }
+
     static description = 'Creates a new agent with a specified name';
 
     static examples = [
-        `<%= config.bin %> <%= command.id %> --agent-name=myAgent`,
+        `<%= config.bin %> <%= command.id %> myAgent`,
     ];
-
-    static flags = {
-        agentName: Flags.string({
-            aliases: ['agent-name'],
-            char: 'n',
-            description: 'name of the agent',
-            helpLabel: '-n --agent-name',
-            required: true
-        }),
-    };
 
     async directoryExists(dirPath: string): Promise<boolean> {
         try {
@@ -34,9 +32,9 @@ export class NewAgent extends Command {
     }
 
     async run() {
-        const { flags } = await this.parse(NewAgent);
+        const { args } = await this.parse(NewAgent);
 
-        const {agentName} = flags;
+        const {agentName} = args;
 
         // Check if the ai/chats directory exists, if not error out
         const dirName = path.join(process.cwd(), 'ai/prompts/agents');

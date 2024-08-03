@@ -20,7 +20,7 @@ export class Kickoff extends Command {
   static description = 'Kickoff a chat from a specific file'
 
   static examples = [
-    `$ mm chats:kickoff ai/chats/user/feature1/feature1.md`,
+    `<%= config.bin %> <%= command.id %> ai/chats/user/feature1/feature1.md`,
   ]
 
   static flags = {

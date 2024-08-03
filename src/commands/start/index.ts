@@ -13,7 +13,7 @@ export default class Start extends Command {
   static description = 'Start mind-merge listener in the current directory'
 
   static examples = [
-    `$ mm start`,
+    `<%= config.bin %> <%= command.id %>`,
   ]
 
   static flags = {
